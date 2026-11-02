@@ -19,10 +19,11 @@ function clickMenu() {
 }
 
 async function startGame() {
-  currentPuzzle = "key";
-  if (typeof userStartAudio === "function") await userStartAudio();
-  if (!ambientSound.isPlaying()) {
-    ambientSound.start();
+  showHub();
+  try {
+    await ambientSound.play();
+  } catch (error) {
+    console.warn("Ambient sound could not start:", error.message);
   }
 }
 
