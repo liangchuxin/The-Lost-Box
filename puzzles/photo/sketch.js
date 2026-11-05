@@ -2,7 +2,6 @@ let photoDragging = false;
 
 function preload() {
   photoImage = loadImage("images/photo.png");
-  boxfaceImage = loadImage("images/boxface.png");
 }
 
 function setup() {
@@ -17,7 +16,7 @@ function draw() {
 }
 
 function mousePressed() {
-  photoDragging = !hasPhoto && !solved && mouseOverPhoto();
+  photoDragging = !hasCloth && !solved && mouseOverPhoto();
   clickPhotoPuzzle();
 }
 
