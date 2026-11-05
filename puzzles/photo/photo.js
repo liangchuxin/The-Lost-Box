@@ -1,8 +1,9 @@
-let hasPhoto = false;
+let hasCloth = false;
 let photoImage;
-let boxfaceImage;
 let photoSoln;
 let solved = false;
+let particles = [];
+let clothClicked = false;
 
 let photo_x = 330;
 let photo_y = 115;
@@ -12,20 +13,72 @@ const PHOTO_HEIGHT = 291
 function drawPhotoPuzzle() {
   background('#34251f')
   displayLetters();
-  if (!hasPhoto) {
+  if (!hasCloth) {
     image(photoImage, photo_x, photo_y, PHOTO_WIDTH, PHOTO_HEIGHT);
   }
-  if(solved == true){
+  if(solved == true && !hasCloth){
     fill('red')
     for (const pos of correctLetters) {
         text(pos.letter, pos.x, pos.y);
     }
     text('G H O S T', 225, 350)
+    if(clothClicked){
+        clothTransformation();
+        fill("#f2ebdeff")
+        rect(photo_x, photo_y, PHOTO_WIDTH, PHOTO_HEIGHT);
+    }
   }
 }
 
+function clothTransformation(){
+    //on click
+    //particle explosion, triangles
+    for(let i=particles.length-1; i >=0; i--){
+        particles[i].display();
+    }
+    //turns to white rectangle
+    //another click and it goes in the inventory
+    
+}
+
+function setupParticles(){
+    for(let i=100; i >=0; i--){
+        let new_particle = new Particle(random(photo_x, photo_x+PHOTO_WIDTH), random(photo_y, photo_y+PHOTO_HEIGHT) );
+        particles.push(new_particle);
+    }
+}
+
+class Particle{
+    constructor(x, y){
+        this.x = x
+        this.y = y
+        this.alph = 255
+        this.size = random(25, 75);
+        if(random([0, 1]) == 0){
+            this.to_x = random(640);
+            this.to_y = random([0, 480]);
+        }
+        else{
+            this.to_y = random(480);
+            this.to_x = random([0, 640]);
+        }
+    }
+    display(){
+        this.x = lerp(this.x, this.to_x, 0.05)
+        this.y = lerp(this.y, this.to_y, 0.05)
+        this.alph = lerp(this.alph, 0, 0.15)
+        if(this.alph <= 5){
+            particles.splice(particles.indexOf(this), 1)
+        }
+        noStroke();
+        fill(255, 255, 255, this.alph);
+        triangle(this.x - this.size/3, this.y + this.size/3, this.x, this.y - this.size/3, this.x + this.size/3, this.y + this.size/3)
+    }
+}
+
+
 function dragPhotoPuzzle(){
-    if(!hasPhoto && solved == false){
+    if(!hasCloth && solved == false){
         photo_x += mouseX - pmouseX;
         photo_y += mouseY - pmouseY;
         keepInBounds();
@@ -53,14 +106,25 @@ function dragPhotoPuzzle(){
 
 
 function clickPhotoPuzzle() {
-  if (!hasPhoto && mouseOverPhoto()) {
-    //pickUpPhoto();
-  }
+    if(!hasCloth && solved && clothClicked && mouseOverPhoto()){
+        pickUpPhoto();
+    }
+    if (!hasCloth && solved && !clothClicked && mouseOverPhoto()) {
+        clothClicked = true;
+        setupParticles();
+    }
 }
 
 function pickUpPhoto() {
-  hasPhoto = true;
-  if (typeof parent.addItem === "function") parent.addItem(2);
+  hasCloth = true;
+  if (typeof parent.addItem === "function") parent.addItem(3);
+  let str = localStorage.getItem('collected_items')
+  if(str == null){
+    str = "[]";
+  }
+  let collected_items = JSON.parse(str);
+  collected_items.push(3);
+  localStorage.setItem('collected_items', JSON.stringify(collected_items));
 }
 
 function mouseOverPhoto() {
