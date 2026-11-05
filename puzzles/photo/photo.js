@@ -10,13 +10,16 @@ const PHOTO_WIDTH = 210;
 const PHOTO_HEIGHT = 291
 
 function drawPhotoPuzzle() {
-  image(boxfaceImage, 0, 0);
+  background('#34251f')
   displayLetters();
   if (!hasPhoto) {
     image(photoImage, photo_x, photo_y, PHOTO_WIDTH, PHOTO_HEIGHT);
   }
   if(solved == true){
     fill('red')
+    for (const pos of correctLetters) {
+        text(pos.letter, pos.x, pos.y);
+    }
     text('G H O S T', 225, 350)
   }
 }
@@ -28,6 +31,22 @@ function dragPhotoPuzzle(){
         keepInBounds();
         if(dist(photo_x, photo_y, 93, 98) < 5){
             solved = true;
+        }
+        for (const pos of letterLayers[0]) {
+
+            pos.x += (mouseX - pmouseX) * 0.1;
+            pos.y += (mouseY - pmouseY)*0.1;
+            //text(pos.letter, pos.x, pos.y);
+        }
+        for (const pos of letterLayers[1]) {
+            pos.x += (mouseX - pmouseX) * 0.05;
+            pos.y += (mouseY - pmouseY)*0.05;
+            //text(pos.letter, pos.x, pos.y);
+        }
+        for (const pos of letterLayers[2]) {
+            pos.x += (mouseX - pmouseX) * 0.02;
+            pos.y += (mouseY - pmouseY)*0.02;
+            //text(pos.letter, pos.x, pos.y);
         }
     }
 }
@@ -70,12 +89,13 @@ function keepInBounds(){
 let letterPositions = null;
 let correctLetters = null;
 const NUM_LETTERS = 50;
+let letterLayers = null;
 
 function displayLetters(){
-    textSize(22)
     if (!letterPositions) {
         setupSoln();
         letterPositions = [];
+        letterLayers = [[],[],[]]
         const MIN_DIST = 30;
         for (let i = 0; i < NUM_LETTERS; i++) {
             let x, y;
@@ -83,7 +103,7 @@ function displayLetters(){
                 x = random(width);
                 y = random(height);
             } while (correctLetters.some(pos => dist(x, y, pos.x, pos.y) < MIN_DIST));
-            letterPositions.push({
+            letterLayers[i%3].push({
                 x: x,
                 y: y,
                 letter: String.fromCharCode(65 + floor(random(26)))
@@ -91,7 +111,16 @@ function displayLetters(){
         }
     }
     fill("#cfcfcf")
-    for (const pos of letterPositions) {
+    for (const pos of letterLayers[0]) {
+        textSize(20)
+        text(pos.letter, pos.x, pos.y);
+    }
+    for (const pos of letterLayers[1]) {
+        textSize(22)
+        text(pos.letter, pos.x, pos.y);
+    }
+    for (const pos of letterLayers[2]) {
+        textSize(24)
         text(pos.letter, pos.x, pos.y);
     }
     for (const pos of correctLetters) {
