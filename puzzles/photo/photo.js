@@ -16,6 +16,7 @@ function drawPhotoPuzzle() {
     image(photoImage, photo_x, photo_y, PHOTO_WIDTH, PHOTO_HEIGHT);
   }
   if(solved == true){
+    fill('red')
     text('G H O S T', 225, 350)
   }
 }
@@ -89,13 +90,11 @@ function displayLetters(){
             });
         }
     }
-
+    fill("#cfcfcf")
     for (const pos of letterPositions) {
-        fill("#cfcfcf")
         text(pos.letter, pos.x, pos.y);
     }
     for (const pos of correctLetters) {
-        fill('red')
         text(pos.letter, pos.x, pos.y);
     }
 }
