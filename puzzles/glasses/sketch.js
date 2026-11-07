@@ -246,7 +246,7 @@ class Drop{
     }
     move(){
         if(this.isTouching()) this.countBounce = 60;
-        if(dist(this.x, this.y, mouseX, mouseY)<15) this.countRun = 60;
+        if(dist(this.x, this.y, mouseX, mouseY)<20) this.countRun = 60;
         let xmove = map(noise(this.offset), 0, 1, -2, 2)
         let ymove = map(noise(this.offset+10), 0, 1, -2, 2)
         this.offset += 0.01;
