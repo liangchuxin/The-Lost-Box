@@ -10,5 +10,9 @@ const items = {
   3: {
     id: 3,
     name: "Cloth"
+  },
+  4: {
+    id: 4,
+    name: "Knife"
   }
 };
