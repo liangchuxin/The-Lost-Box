@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fracture</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #c9b194; color: #392a20; font-family: Georgia, serif; min-height: 100vh; display: grid; place-items: center; }
+    main { width: min(740px, 94vw, calc(119.35vh - 100px)); padding: 16px 0; text-align: right; }
+    canvas { display: block; width: 100% !important; height: auto !important; touch-action: none; cursor: crosshair; border-radius: 3px; }
+    button { margin-top: 12px; width: 44px; height: 44px; border: 0; color: inherit; background: transparent; padding: 10px; cursor: pointer; }
+    button:focus-visible { outline: 2px solid #392a20; }
+  </style>
+  <script src="../../vendor/p5.min.js" defer></script>
+  <script src="sketch.js" defer></script>
+</head>
+<body>
+  <main>
+    <div id="scene"></div>
+    <button id="reset" aria-label="Retry" title="Retry">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 11a9 9 0 1 0-2.8 6.5"/>
+        <path d="M21 4v7h-7"/>
+      </svg>
+    </button>
+  </main>
+  <script src="../../module.js"></script>
+</body>
+</html>
