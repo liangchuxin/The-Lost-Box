@@ -14,5 +14,9 @@ const items = {
   4: {
     id: 4,
     name: "Knife"
+  },
+  5: {
+    id: 5,
+    name: "Scythe"
   }
 };
