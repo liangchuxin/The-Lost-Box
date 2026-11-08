@@ -1,3 +1,29 @@
+home_button = {
+    x: 960/2,
+    y: 760/4,
+    size: 200,
+    mouseover: function(){
+        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
+            return true;
+        }
+        return false;
+    },
+    display: function(){
+        fill('#32965D');
+        if(this.mouseover()) fill('#21633e');
+        ellipse(this.x, this.y, this.size, this.size);
+        fill(255);
+        textSize(60);
+        textAlign(CENTER, CENTER);
+        text("next", this.x, this.y);
+    },
+    clickNext: function(){
+        if(this.mouseover()){
+            if (typeof parent.showHub === "function") parent.showHub();
+        }
+    }
+}
+
 // Real objects and their symbolic shadows use separate image assets.
 // Their positions follow a point-light projection; opening the cage is story animation.
 let art = {};
@@ -231,12 +257,16 @@ function draw() {
     draggingLamp = false;
     selected = null;
     updateControls();
-  } else if (solved) flightTime += dt;
+    addItemToLocalStorage();
+  } else if (solved){
+    flightTime += dt;
+  }
   drawRoom();
   drawShadows(cage, key, bow);
   drawSlots();
   drawObjects();
   drawLantern();
+  if(solved) home_button.display();
 }
 
 function drawRoom() {
@@ -373,7 +403,20 @@ function mousePressed(event) {
     mouseY < 725
   )
     draggingLamp = true;
+
+  if(solved) home_button.clickNext();
 }
 function mouseReleased() {
   draggingLamp = false;
+}
+
+function addItemToLocalStorage(){
+  if (typeof parent.addItem === "function") parent.addItem(2);
+    let str = localStorage.getItem('collected_items')
+    if(str == null){
+        str = "[]";
+    }
+    let collected_items = JSON.parse(str);
+    collected_items.push(2);
+    localStorage.setItem('collected_items', JSON.stringify(collected_items));
 }

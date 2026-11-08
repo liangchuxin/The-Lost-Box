@@ -4,9 +4,7 @@ let photoSoln;
 let solved = false;
 let particles = [];
 let clothClicked = false;
-//FOR TESTING
-let showTool = true;
-// let showTool = false;
+let showTool = false;
 
 let photo_x = 330;
 let photo_y = 115;
@@ -65,7 +63,6 @@ function drawPhotoPuzzle() {
 function getInventoryItem(){
     if (parent.getSelectedItem() === 2) {
         parent.removeInventoryItem(2);
-        console.log("here");
         showTool= true;
     }
 }
@@ -203,6 +200,10 @@ function displayLetters(){
         setupSoln();
         letterPositions = [];
         letterLayers = [[],[],[]]
+        for (const pos of correctLetters) {
+        letterLayers[1].push(pos)
+        text(pos.letter, pos.x, pos.y);
+        }
         const MIN_DIST = 30;
         for (let i = 0; i < NUM_LETTERS; i++) {
             let x, y;
@@ -230,9 +231,10 @@ function displayLetters(){
         textSize(24)
         text(pos.letter, pos.x, pos.y);
     }
-    for (const pos of correctLetters) {
-        text(pos.letter, pos.x, pos.y);
-    }
+    // for (const pos of correctLetters) {
+    //     letterLayers[1].push(pos)
+    //     text(pos.letter, pos.x, pos.y);
+    // }
 }
 
 function setupSoln(){

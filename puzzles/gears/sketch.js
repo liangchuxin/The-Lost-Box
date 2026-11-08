@@ -43,9 +43,7 @@ mykey = {
 solved = false;
 handCollected = false;
 particles = [];
-//FOR TESTING
-let showTool = true;
-// let showTool = false;
+let showTool = false;
 async function setup(){
     createCanvas(640, 480).parent("scene");
     key_art = await loadImage('images/key.png');

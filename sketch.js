@@ -35,6 +35,7 @@ function setup() {
       else frame.focus();
     });
   }
+  localStorage.setItem('completed_game', "false");
 }
 
 function selectObject(slot) {
@@ -85,6 +86,8 @@ function showHub() {
   }
   currentPuzzle = "home";
 
+  let completed = localStorage.getItem('completed_game') == "true";
+
   let str = localStorage.getItem('collected_items')
   if(str == null){
       str = "[]";
@@ -92,7 +95,7 @@ function showHub() {
   const collected = JSON.parse(str);
   const buttons = document.querySelectorAll("#hub [data-puzzle]");
   for(let i = 0; i < buttons.length; i++){
-    buttons[i].hidden = i != collected.length;
+    buttons[i].hidden = completed || i != collected.length;
   }
   treeStage = collected.length;
 
@@ -116,12 +119,19 @@ function openPuzzle(id) {
 }
 
 function draw() {
+  let completed = localStorage.getItem('completed_game');
   push();
   if (currentPuzzle === "menu") drawMenu();
   else if (currentPuzzle === "key") drawKeyPuzzle();
   else {
     background("#c9b194");
-    if (currentPuzzle === "home") drawTree();
+    if (currentPuzzle === "home"){
+      if (localStorage.getItem('completed_game') == "true") {
+        text("~ FIN ~", width/2, height/2);
+      } else {
+        drawTree();
+      }
+    }
   }
   pop();
 }

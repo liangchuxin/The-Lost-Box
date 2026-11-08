@@ -41,6 +41,7 @@ function setup() {
   window.addEventListener("blur", () => { spaceHeld = false; });
   window.addEventListener("message", handlePuzzleMessage);
   resetPuzzle();
+  getInventoryItem();
 }
 
 function resetPuzzle() {
@@ -91,6 +92,10 @@ function draw() {
   }
   drawCutEffects(dt);
   pop();
+
+  if(keyCollected){
+    home_button.display();
+  }
 }
 
 class Piece {
@@ -246,6 +251,7 @@ function clickPhoto(event) {
   if (event.button !== 0) return;
   event.preventDefault();
   if (broken) {
+    if(keyCollected) home_button.clickNext();
     // Convert browser coordinates to canvas coordinates when CSS scales the canvas.
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = (event.clientX - bounds.left) * width / bounds.width;
@@ -305,6 +311,7 @@ function tryCollectKey(x, y) {
     if (pieceCovers(piece, x, y)) return false; // Cannot collect through the photo.
   }
   keyCollected = true;
+  addItemToLocalStorage();
   if (typeof parent.addItem === "function") parent.addItem(1);
   return true;
 }
@@ -397,4 +404,47 @@ function handlePuzzleMessage(event) {
     for (const cut of cuts) cut.start += pausedTime;
     pausedAt = null;
   }
+}
+
+home_button = {
+    x: 740/2,
+    y: 620/4,
+    size: 150,
+    mouseover: function(){
+        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
+            return true;
+        }
+        return false;
+    },
+    display: function(){
+        fill('#32965D');
+        if(this.mouseover()) fill('#21633e');
+        ellipse(this.x, this.y, this.size, this.size);
+        fill(255);
+        textSize(45);
+        textAlign(CENTER, CENTER);
+        text("next", this.x, this.y);
+    },
+    clickNext: function(){
+        if(this.mouseover()){
+            if (typeof parent.showHub === "function") parent.showHub();
+        }
+    }
+}
+
+function addItemToLocalStorage(){
+  if (typeof parent.addItem === "function") parent.addItem(1);
+    let str = localStorage.getItem('collected_items')
+    if(str == null){
+        str = "[]";
+    }
+    let collected_items = JSON.parse(str);
+    collected_items.push(1);
+    localStorage.setItem('collected_items', JSON.stringify(collected_items));
+}
+
+function getInventoryItem(){
+    //if (parent.getSelectedItem() === 4) {
+        parent.removeInventoryItem(4);
+    //}
 }
