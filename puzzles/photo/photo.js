@@ -10,6 +10,8 @@ let photo_x = 330;
 let photo_y = 115;
 const PHOTO_WIDTH = 210;
 const PHOTO_HEIGHT = 291
+let solve_x = 93;
+let solve_y = 98;
 
 home_button = {
     x: 640/2,
@@ -113,33 +115,66 @@ class Particle{
     }
 }
 
-
 function dragPhotoPuzzle(){
     if(!hasCloth && solved == false){
+        const prevX = photo_x;
+        const prevY = photo_y;
         photo_x += mouseX - pmouseX;
         photo_y += mouseY - pmouseY;
         keepInBounds();
-        if(dist(photo_x, photo_y, 93, 98) < 5){
-            solved = true;
-        }
-        for (const pos of letterLayers[0]) {
+        const dx = photo_x - prevX;
+        const dy = photo_y - prevY;
 
-            pos.x += (mouseX - pmouseX) * 0.1;
-            pos.y += (mouseY - pmouseY)*0.1;
-            //text(pos.letter, pos.x, pos.y);
+        for (const pos of letterLayers[0]) {
+            pos.x += dx * 0.1;
+            pos.y += dy * 0.1;
         }
         for (const pos of letterLayers[1]) {
-            pos.x += (mouseX - pmouseX) * 0.05;
-            pos.y += (mouseY - pmouseY)*0.05;
-            //text(pos.letter, pos.x, pos.y);
+            pos.x += dx * 0.05;
+            pos.y += dy * 0.05;
         }
+        solve_x += dx * 0.05;
+        solve_y += dy * 0.05;
         for (const pos of letterLayers[2]) {
-            pos.x += (mouseX - pmouseX) * 0.02;
-            pos.y += (mouseY - pmouseY)*0.02;
-            //text(pos.letter, pos.x, pos.y);
+            pos.x += dx * 0.02;
+            pos.y += dy * 0.02;
+        }
+
+        if(dist(photo_x, photo_y, solve_x, solve_y) < 5){
+            solved = true;
         }
     }
 }
+
+
+// function dragPhotoPuzzle(){
+//     if(!hasCloth && solved == false){
+//         photo_x += mouseX - pmouseX;
+//         photo_y += mouseY - pmouseY;
+//         keepInBounds();
+//         if(dist(photo_x, photo_y, 93, 98) < 5){
+//             solved = true;
+//         }
+//         for (const pos of letterLayers[0]) {
+
+//             pos.x += (mouseX - pmouseX) * 0.1;
+//             pos.y += (mouseY - pmouseY)*0.1;
+//             //text(pos.letter, pos.x, pos.y);
+//         }
+//         for (const pos of letterLayers[1]) {
+//             pos.x += (mouseX - pmouseX) * 0.05;
+//             pos.y += (mouseY - pmouseY)*0.05;
+//             //text(pos.letter, pos.x, pos.y);
+//         }
+//         solve_x += (mouseX - pmouseX) * 0.05;
+//         solve_y += (mouseY - pmouseY)*0.05;
+//         for (const pos of letterLayers[2]) {
+//             pos.x += (mouseX - pmouseX) * 0.02;
+//             pos.y += (mouseY - pmouseY)*0.02;
+//             //text(pos.letter, pos.x, pos.y);
+//         }
+//     }
+// }
 
 
 function clickPhotoPuzzle() {
