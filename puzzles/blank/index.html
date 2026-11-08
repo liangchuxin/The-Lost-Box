@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Photo Puzzle</title>
+  <link rel="icon" href="data:,">
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #c9b194; }
+    #scene { width: min(100vw, calc(100vh * 4 / 3), 640px); }
+    canvas { display: block; width: 100% !important; height: auto !important; touch-action: none; }
+  </style>
+</head>
+<body>
+  <div id="scene" aria-label="Photo puzzle"></div>
+  <script src="../../vendor/p5.min.js"></script>
+  <script src="sketch.js"></script>
+  <script src="../../module.js"></script>
+</body>
+</html>

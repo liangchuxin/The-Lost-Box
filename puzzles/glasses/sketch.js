@@ -1,9 +1,36 @@
+home_button = {
+    x: 640/2,
+    y: 480/4,
+    size: 100,
+    mouseover: function(){
+        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
+            return true;
+        }
+        return false;
+    },
+    display: function(){
+        fill('#32965D');
+        if(this.mouseover()) fill('#21633e');
+        ellipse(this.x, this.y, this.size, this.size);
+        fill(255);
+        textSize(30);
+        textAlign(CENTER, CENTER);
+        text("next", this.x, this.y);
+    },
+    clickNext: function(){
+        if(this.mouseover()){
+            if (typeof parent.showHub === "function") parent.showHub();
+        }
+    }
+}
+
 let drops_left = [];
 let drops_right = [];
 let currpsswd = [0, 0, 0, 0]
 let psswd = [0, 2, 1, 4];
 let solved = false;
 let knifeCollected = false;
+let showTool = false;
 
 async function setup() {
   createCanvas(640, 480).parent("scene");
@@ -42,6 +69,9 @@ function draw(){
         if(!knifeCollected){
             image(knife_art, 40, height/2 - 20, 245)
         }
+        else{
+            home_button.display();
+        }
         if(frameCount % 10 == 0){
             if(drops_left.length < 100){
                 drops_left.splice(0, 5);
@@ -64,11 +94,23 @@ function draw(){
 }
 
 function mousePressed(){
+    getInventoryItem();
     if(!solved){
         clickPassword();
     }
-    if(!knifeCollected){
+    if(!knifeCollected && solved){
         collectKnife();
+    }
+    if(knifeCollected && solved){
+        home_button.clickNext();
+    }
+}
+
+function getInventoryItem(){
+    if (parent.getSelectedItem() === 3) {
+        parent.removeInventoryItem(3);
+        console.log("here");
+        showTool= true;
     }
 }
 
@@ -246,7 +288,9 @@ class Drop{
     }
     move(){
         if(this.isTouching()) this.countBounce = 60;
-        if(dist(this.x, this.y, mouseX, mouseY)<20) this.countRun = 60;
+        let rad = 20;
+        if(!showTool) rad = 0
+        if(dist(this.x, this.y, mouseX, mouseY)<rad) this.countRun = 60;
         let xmove = map(noise(this.offset), 0, 1, -2, 2)
         let ymove = map(noise(this.offset+10), 0, 1, -2, 2)
         this.offset += 0.01;

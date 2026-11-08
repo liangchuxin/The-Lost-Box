@@ -4,17 +4,47 @@ let photoSoln;
 let solved = false;
 let particles = [];
 let clothClicked = false;
+let showTool = false;
 
 let photo_x = 330;
 let photo_y = 115;
 const PHOTO_WIDTH = 210;
 const PHOTO_HEIGHT = 291
 
+home_button = {
+    x: 640/2,
+    y: 480/4,
+    size: 100,
+    mouseover: function(){
+        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
+            return true;
+        }
+        return false;
+    },
+    display: function(){
+        fill('#32965D');
+        if(this.mouseover()) fill('#21633e');
+        ellipse(this.x, this.y, this.size, this.size);
+        fill(255);
+        textSize(30);
+        textAlign(CENTER, CENTER);
+        text("next", this.x, this.y);
+    },
+    clickNext: function(){
+        if(this.mouseover()){
+            if (typeof parent.showHub === "function") parent.showHub();
+        }
+    }
+}
+
 function drawPhotoPuzzle() {
   background('#34251f')
   displayLetters();
-  if (!hasCloth) {
+  if (!hasCloth && showTool) {
     image(photoImage, photo_x, photo_y, PHOTO_WIDTH, PHOTO_HEIGHT);
+  }
+  if(hasCloth){
+    home_button.display();
   }
   if(solved == true && !hasCloth){
     fill('red')
@@ -28,6 +58,14 @@ function drawPhotoPuzzle() {
         rect(photo_x, photo_y, PHOTO_WIDTH, PHOTO_HEIGHT);
     }
   }
+}
+
+function getInventoryItem(){
+    if (parent.getSelectedItem() === 2) {
+        parent.removeInventoryItem(2);
+        console.log("here");
+        showTool= true;
+    }
 }
 
 function clothTransformation(){
@@ -113,6 +151,9 @@ function clickPhotoPuzzle() {
         clothClicked = true;
         setupParticles();
     }
+    if(hasCloth){
+        home_button.clickNext();
+    }
 }
 
 function pickUpPhoto() {
@@ -174,7 +215,7 @@ function displayLetters(){
             });
         }
     }
-    fill("#cfcfcf")
+    fill("#C9B194")
     for (const pos of letterLayers[0]) {
         textSize(20)
         text(pos.letter, pos.x, pos.y);
