@@ -23,6 +23,7 @@ function setup() {
   createCanvas(960, 960).parent('clock-canvas');
   angleMode(DEGREES);
   startRound();
+  getInventoryItem();
 }
 
 function startRound() {
@@ -35,10 +36,10 @@ function startRound() {
 }
 
 function draw() {
-  if (matched === 3 && patternIndex < 2) {
-    patternIndex++;
-    startRound();
-  }
+  // if (matched === 3 && patternIndex < 2) {
+  //   patternIndex++;
+  //   startRound();
+  // }
   if (!focused) dragging = false;
   if (focused && !dragging) {
     let speed = min(deltaTime, 50) * 0.05;
@@ -54,6 +55,10 @@ function draw() {
   rotate(handAngle - 180);
   imageMode(CENTER);
   image(handImage, 0, 0, 900, 900);
+  if (matched === 3){ //&& patternIndex === 2) {
+    resetMatrix();
+    home_button.display();
+  }
 }
 
 class Flower {
@@ -172,6 +177,10 @@ function drawDial() {
 }
 
 function mousePressed() {
+  if (matched === 3){// && patternIndex === 2) {
+    home_button.clickNext();
+    return;
+  }
   let x = mouseX - width / 2;
   let y = mouseY - height / 2;
   let along = x * sin(handAngle) - y * cos(handAngle);
@@ -201,4 +210,41 @@ function mouseReleased() {
 
 function keyPressed() {
   if (keyCode === LEFT_ARROW || keyCode === RIGHT_ARROW) return false;
+}
+
+function getInventoryItem(){
+    //if (parent.getSelectedItem() === 4) {
+        parent.removeInventoryItem(5);
+    //}
+}
+
+home_button = {
+    x: 960/2,
+    y: 960/2,
+    size: 200,
+    mouseover: function(){
+        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
+            return true;
+        }
+        return false;
+    },
+    display: function(){
+        fill('#32965D');
+        if(this.mouseover()) fill('#21633e');
+        ellipse(this.x, this.y, this.size, this.size);
+        fill(255);
+        textSize(60);
+        textAlign(CENTER, CENTER);
+        text("next", this.x, this.y);
+    },
+    clickNext: function(){
+        if(this.mouseover()){
+          completeGame();
+          if (typeof parent.showHub === "function") parent.showHub();
+        }
+    }
+}
+
+function completeGame(){;
+  localStorage.setItem('completed_game', "true");
 }

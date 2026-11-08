@@ -34,7 +34,7 @@ let showTool = false;
 
 async function setup() {
   createCanvas(640, 480).parent("scene");
-  knife_art = await loadImage('images/knife_placeholder.png')
+  knife_art = await loadImage('images/knife.png')
   dirtBuffer = createGraphics(640, 480);
   textAlign(CENTER);
   textSize(30);
