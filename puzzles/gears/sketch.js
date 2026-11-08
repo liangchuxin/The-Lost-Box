@@ -1,3 +1,29 @@
+home_button = {
+    x: 640/2,
+    y: 480/4,
+    size: 100,
+    mouseover: function(){
+        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
+            return true;
+        }
+        return false;
+    },
+    display: function(){
+        fill('#32965D');
+        if(this.mouseover()) fill('#21633e');
+        ellipse(this.x, this.y, this.size, this.size);
+        fill(255);
+        textSize(30);
+        textAlign(CENTER, CENTER);
+        text("next", this.x, this.y);
+    },
+    clickNext: function(){
+        if(this.mouseover()){
+            if (typeof parent.showHub === "function") parent.showHub();
+        }
+    }
+}
+
 mykey = {
     x: 100,
     y: 100,
@@ -17,6 +43,9 @@ mykey = {
 solved = false;
 handCollected = false;
 particles = [];
+//FOR TESTING
+let showTool = true;
+// let showTool = false;
 async function setup(){
     createCanvas(640, 480).parent("scene");
     key_art = await loadImage('images/key.png');
@@ -42,7 +71,9 @@ function draw(){
     for(gear of gears){
         gear.display();
     }
-    mykey.display();
+    if(showTool){
+        mykey.display();
+    }
     checkSolved();
     if(solved){
         for(let i = particles.length-1; i >= 0; i--){
@@ -58,12 +89,19 @@ function draw(){
             image(hand_art, 0,0, 300, 300);
             pop()
         }
+        else{
+            home_button.display();
+        }
     }
 }
 
 function mousePressed(){
+    getInventoryItem();
     if(!handCollected && solved){
         collectHand();
+    }
+    if(handCollected){
+        home_button.clickNext();
     }
 }
 
@@ -85,6 +123,14 @@ function mouseDragged(){
                 gear.angle += pmouseX - mouseX;
             }
         }
+    }
+}
+
+function getInventoryItem(){
+    if (parent.getSelectedItem() === 1) {
+        parent.removeInventoryItem(1);
+        console.log("here");
+        showTool= true;
     }
 }
 
@@ -113,7 +159,7 @@ function checkSolved(){
     }
     let idealx = 396;
     let idealy = 305;
-    let wiggle = 2
+    let wiggle = 3;
 
     if(!(mykey.x > idealx - wiggle && mykey.x < idealx + wiggle && mykey.y > idealy - wiggle && mykey.y < idealy + wiggle)){
         return

@@ -18,6 +18,7 @@ function draw() {
 function mousePressed() {
   photoDragging = !hasCloth && !solved && mouseOverPhoto();
   clickPhotoPuzzle();
+  getInventoryItem();
 }
 
 function mouseDragged() {
