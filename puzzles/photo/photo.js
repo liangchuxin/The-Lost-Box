@@ -4,7 +4,9 @@ let photoSoln;
 let solved = false;
 let particles = [];
 let clothClicked = false;
-let showTool = false;
+//FOR TESTING
+let showTool = true;
+// let showTool = false;
 
 let photo_x = 330;
 let photo_y = 115;

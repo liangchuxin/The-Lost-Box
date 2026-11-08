@@ -43,7 +43,9 @@ mykey = {
 solved = false;
 handCollected = false;
 particles = [];
-showTool = false;
+//FOR TESTING
+let showTool = true;
+// let showTool = false;
 async function setup(){
     createCanvas(640, 480).parent("scene");
     key_art = await loadImage('images/key.png');
@@ -157,7 +159,7 @@ function checkSolved(){
     }
     let idealx = 396;
     let idealy = 305;
-    let wiggle = 2
+    let wiggle = 3;
 
     if(!(mykey.x > idealx - wiggle && mykey.x < idealx + wiggle && mykey.y > idealy - wiggle && mykey.y < idealy + wiggle)){
         return
