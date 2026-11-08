@@ -5,7 +5,7 @@ main { display: flex; gap: 24px; max-width: 1180px; height: calc(100vh - 48px); 
 #stage { position: relative; flex: 1; min-width: 0; }
 #scene { display: grid; place-items: center; height: 100%; }
 canvas { display: block; max-width: 100%; height: auto !important; }
-#hub { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px; background: #c9b194; }
+#hub { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #c9b194; }
 #hub button { border: 0; padding: 12px 24px; background: none; color: inherit; font: 32px Georgia, serif; cursor: pointer; }
 #hub button:hover { text-decoration: underline; text-underline-offset: 8px; }
 #puzzle-panel { position: absolute; inset: 0; display: flex; flex-direction: column; background: #c9b194; }
