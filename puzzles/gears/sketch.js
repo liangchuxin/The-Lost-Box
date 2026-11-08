@@ -4,7 +4,7 @@ mykey = {
     img: "art",
     display: function(){
         if(!solved){
-            image(this.img, this.x, this.y);
+            image(this.img, this.x, this.y, 150, 165);
         }
     },
     mouseover: function(){
@@ -27,11 +27,12 @@ async function setup(){
     gear2_art = await loadImage('images/gear_2.png');
     gear3_art = await loadImage('images/gear_3.png');
     gear4_art = await loadImage('images/gear_4.png');
-    gear_0 = new Gear(width/2 - 100, height/2, gear0_art);
-    gear_1 = new Gear(width/2 - 50, height/2 + 90, gear1_art);
+    let size = 150
+    gear_0 = new Gear(width/2 - size, height/2, gear0_art);
+    gear_1 = new Gear(width/2 - size/2, height/2 + size-20, gear1_art);
     gear_2 = new Gear(width/2, height/2, gear2_art);
-    gear_3 = new Gear(width/2 + 50, height/2 + 90, gear3_art)
-    gear_4 = new Gear(width/2 + 100, height/2, gear4_art);
+    gear_3 = new Gear(width/2 + size/2, height/2 + size-20, gear3_art)
+    gear_4 = new Gear(width/2 + size, height/2, gear4_art);
     gears = [gear_0, gear_1, gear_2, gear_3, gear_4]
     imageMode(CENTER);
 }
@@ -110,9 +111,10 @@ function checkSolved(){
     if (!((angle_2 > 356 || angle_2%360 < 5) && (angle_3%360 > 356 || angle_3%360 < 5) && (angle_4%360 > 356 || angle_4%360 < 5))){
         return
     }
-    let idealx = 370;
-    let idealy = 285;
+    let idealx = 396;
+    let idealy = 305;
     let wiggle = 2
+
     if(!(mykey.x > idealx - wiggle && mykey.x < idealx + wiggle && mykey.y > idealy - wiggle && mykey.y < idealy + wiggle)){
         return
     }
@@ -157,7 +159,7 @@ class Gear{
         this.x = x;
         this.y = y;
         this.img = img
-        this.size = 100;
+        this.size = 150;
         this.angle = random(360)
     }
     display(){
@@ -172,7 +174,7 @@ class Gear{
         imageMode(CENTER)
         translate(this.x, this.y)
         rotate(this.angle)
-        image(this.img, 0, 0);
+        image(this.img, 0, 0, this.size, this.size);
         pop()
         //this.angle += 1;
     }
