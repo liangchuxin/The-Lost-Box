@@ -9,7 +9,7 @@ const buttonSound = new Audio(new URL("sounds/button-click.mp3", document.curren
 document.addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button || button.matches(":disabled")) return;
-  if (!["begin", "back", "return-room", "reset", "reset-game"].includes(button.id)) return;
+  if (!["begin", "return-room", "reset", "reset-game"].includes(button.id)) return;
   buttonSound.currentTime = 0;
   buttonSound.play().catch(error => {
     if (error.name !== "AbortError") console.warn("Button sound could not start:", error.message);

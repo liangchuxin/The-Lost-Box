@@ -1,3 +1,15 @@
+/*
+Project Title: The Lost Box
+Author Names: Celia Liang (cl7093), Grace Johnson (gaj8834)
+Date of Submission: Nov 8
+
+Description: The Lost Box is a puzzle game where players explore
+an attic, uncover a family's story, and collect tools to solve six connected puzzles.
+
+Controls: Click to select and collect items. Select an inventory item, then
+click inside a puzzle to use it. Drag objects to move or rotate them.
+*/
+
 let currentPuzzle = "menu";
 let selectedObjectId = null;
 let homeAudio = [];
@@ -22,7 +34,10 @@ function setup() {
   ellipseMode(CENTER);
   textSize(30);
   textAlign(CENTER);
-  homeAudio = [new Audio("sounds/windy_ambience.mp3"), new Audio("sounds/attic-music.mp3")];
+  homeAudio = [
+    new Audio("sounds/windy_ambience.mp3"),
+    new Audio("sounds/attic-music.mp3"),
+  ];
   homeAudio[0].volume = 0.12;
   homeAudio[1].volume = 0.35;
   for (const sound of homeAudio) sound.loop = true;
@@ -48,11 +63,11 @@ function setup() {
   for (const slot of slots) slot.onclick = () => selectObject(slot);
   document.getElementById("begin").onclick = startGame;
   document.getElementById("reset-game").onclick = resetGame;
-  document.getElementById("back").onclick = showHub;
   document.getElementById("return-room").onclick = showHub;
   for (const frame of puzzleFrames) {
     frame.addEventListener("load", () => {
-      if (frame.hidden) frame.contentWindow.postMessage("pause-puzzle", location.origin);
+      if (frame.hidden)
+        frame.contentWindow.postMessage("pause-puzzle", location.origin);
       else frame.focus();
     });
   }
@@ -69,14 +84,26 @@ function loadProgress() {
         if (!saved.completed.includes(object.id)) break;
         completedPuzzles.push(object.id);
       }
-      inventory = Array.isArray(saved.inventory) ? saved.inventory.filter(id => items[id]) : [];
+      inventory = Array.isArray(saved.inventory)
+        ? saved.inventory.filter((id) => items[id])
+        : [];
     } else {
-      const collected = JSON.parse(localStorage.getItem("collected_items") || "[]");
+      const collected = JSON.parse(
+        localStorage.getItem("collected_items") || "[]",
+      );
       for (const object of roomObjects) {
-        if (!object.reward || !Array.isArray(collected) || !collected.includes(object.reward)) break;
+        if (
+          !object.reward ||
+          !Array.isArray(collected) ||
+          !collected.includes(object.reward)
+        )
+          break;
         completedPuzzles.push(object.id);
       }
-      if (completedPuzzles.length === 5 && localStorage.getItem("completed_game") === "true") {
+      if (
+        completedPuzzles.length === 5 &&
+        localStorage.getItem("completed_game") === "true"
+      ) {
         completedPuzzles.push("flower-clock");
       }
     }
@@ -93,7 +120,10 @@ function loadProgress() {
 }
 
 function saveProgress() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify({ completed: completedPuzzles, inventory }));
+  localStorage.setItem(
+    SAVE_KEY,
+    JSON.stringify({ completed: completedPuzzles, inventory }),
+  );
 }
 
 function renderInventory() {
@@ -123,7 +153,8 @@ function renderInventory() {
 function resetGame() {
   // Clear only this game's saves and unload each puzzle's in-memory state.
   for (const frame of puzzleFrames) {
-    if (frame.hasAttribute("src")) frame.contentWindow.postMessage("pause-puzzle", location.origin);
+    if (frame.hasAttribute("src"))
+      frame.contentWindow.postMessage("pause-puzzle", location.origin);
     frame.hidden = true;
     frame.removeAttribute("src");
   }
@@ -142,8 +173,9 @@ function selectObject(slot) {
   selectedObjectId = slot.dataset.itemId ? Number(slot.dataset.itemId) : null;
   if (items[selectedObjectId]) {
     inventoryPickupSound.currentTime = 0;
-    inventoryPickupSound.play().catch(error => {
-      if (error.name !== "AbortError") console.warn("Inventory sound could not start:", error.message);
+    inventoryPickupSound.play().catch((error) => {
+      if (error.name !== "AbortError")
+        console.warn("Inventory sound could not start:", error.message);
     });
   }
   renderInventory();
@@ -158,7 +190,7 @@ function addItem(id) {
 
 function removeInventoryItem(id) {
   if (!inventory.includes(id)) return;
-  inventory = inventory.filter(itemId => itemId !== id);
+  inventory = inventory.filter((itemId) => itemId !== id);
   if (selectedObjectId === id) selectedObjectId = null;
   renderInventory();
   playItemSound(id);
@@ -168,8 +200,9 @@ function playItemSound(id) {
   const audio = itemSounds[id];
   if (!audio) return;
   audio.currentTime = 0;
-  audio.play().catch(error => {
-    if (error.name !== "AbortError") console.warn("Item sound could not start:", error.message);
+  audio.play().catch((error) => {
+    if (error.name !== "AbortError")
+      console.warn("Item sound could not start:", error.message);
   });
 }
 
@@ -183,17 +216,19 @@ function completePuzzle(id) {
   completedPuzzles.push(id);
   saveProgress();
   updateAudioCredits();
-  document.getElementById("back").hidden = true;
   document.getElementById("return-room").hidden = false;
 }
 
 function showHub() {
   for (const frame of puzzleFrames) {
-    if (frame.hasAttribute("src")) frame.contentWindow.postMessage("pause-puzzle", location.origin);
+    if (frame.hasAttribute("src"))
+      frame.contentWindow.postMessage("pause-puzzle", location.origin);
     frame.hidden = true;
   }
   currentPuzzle = "home";
-  setPuzzleAudio(completedPuzzles.length === roomObjects.length ? "flower-clock" : null);
+  setPuzzleAudio(
+    completedPuzzles.length === roomObjects.length ? "flower-clock" : null,
+  );
   setHomeAudio(true);
   document.getElementById("reset-controls").hidden = true;
   document.getElementById("begin").hidden = true;
@@ -204,11 +239,15 @@ function showHub() {
   for (let i = 0; i < buttons.length; i++) {
     buttons[i].hidden = i > completedPuzzles.length;
     buttons[i].disabled = i < completedPuzzles.length;
-    buttons[i].setAttribute("aria-label", roomObjects[i].name + (buttons[i].disabled ? " (completed)" : ""));
+    buttons[i].setAttribute(
+      "aria-label",
+      roomObjects[i].name + (buttons[i].disabled ? " (completed)" : ""),
+    );
   }
   updateEndingFlowers();
   updateAudioCredits();
-  document.getElementById("ending").hidden = completedPuzzles.length !== roomObjects.length;
+  document.getElementById("ending").hidden =
+    completedPuzzles.length !== roomObjects.length;
   redraw();
 }
 
@@ -222,7 +261,6 @@ function openPuzzle(id) {
   document.getElementById("reset-controls").hidden = true;
   document.getElementById("hub").hidden = true;
   document.getElementById("puzzle-panel").hidden = false;
-  document.getElementById("back").hidden = id === "shadow-cage";
   document.getElementById("return-room").hidden = true;
   frame.hidden = false;
   if (!frame.hasAttribute("src")) frame.src = frame.dataset.src;
@@ -243,5 +281,6 @@ function canvasClicked() {
 }
 
 function updateAudioCredits() {
-  document.getElementById("audio-credits").hidden = completedPuzzles.length !== roomObjects.length;
+  document.getElementById("audio-credits").hidden =
+    completedPuzzles.length !== roomObjects.length;
 }

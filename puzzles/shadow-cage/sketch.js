@@ -259,7 +259,9 @@ function draw() {
   }
   if (lampX !== previousLampX) lastLampMove = millis();
   // Bridge short gaps between mouse updates without restarting the sound each frame.
-  setLampSound(!solved && (draggingLamp || moving !== 0) && millis() - lastLampMove < 100);
+  setLampSound(
+    !solved && (draggingLamp || moving !== 0) && millis() - lastLampMove < 100,
+  );
   drawRoom();
   drawShadows(cage, key, bow);
   drawSlots();
@@ -373,6 +375,8 @@ function drawShadows(cage, key, bow) {
   ctx.restore();
 }
 
+// butterfly implementation with help of codex 11.4
+
 function drawButterfly(bow) {
   const t = flightTime;
   const flap = solved ? 0.58 + abs(sin(flightTime * 8)) * 0.42 : 1;
@@ -443,16 +447,18 @@ function collectPhoto() {
 function playObjectSound(action) {
   const audio = document.getElementById("object-" + action + "-sound");
   audio.currentTime = 0;
-  audio.play().catch(error => {
-    if (error.name !== "AbortError") console.warn("Object sound could not start:", error.message);
+  audio.play().catch((error) => {
+    if (error.name !== "AbortError")
+      console.warn("Object sound could not start:", error.message);
   });
 }
 
 function setLampSound(playing) {
   const audio = document.getElementById("lamp-drag-sound");
   if (playing && audio.paused) {
-    audio.play().catch(error => {
-      if (error.name !== "AbortError") console.warn("Lamp sound could not start:", error.message);
+    audio.play().catch((error) => {
+      if (error.name !== "AbortError")
+        console.warn("Lamp sound could not start:", error.message);
     });
   } else if (!playing && !audio.paused) {
     audio.pause();
