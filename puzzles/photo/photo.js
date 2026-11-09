@@ -13,40 +13,11 @@ const PHOTO_HEIGHT = 291
 let solve_x = 93;
 let solve_y = 98;
 
-home_button = {
-    x: 640/2,
-    y: 480/4,
-    size: 100,
-    mouseover: function(){
-        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
-            return true;
-        }
-        return false;
-    },
-    display: function(){
-        fill('#32965D');
-        if(this.mouseover()) fill('#21633e');
-        ellipse(this.x, this.y, this.size, this.size);
-        fill(255);
-        textSize(30);
-        textAlign(CENTER, CENTER);
-        text("next", this.x, this.y);
-    },
-    clickNext: function(){
-        if(this.mouseover()){
-            if (typeof parent.showHub === "function") parent.showHub();
-        }
-    }
-}
-
 function drawPhotoPuzzle() {
   background('#34251f')
   displayLetters();
   if (!hasCloth && showTool) {
     image(photoImage, photo_x, photo_y, PHOTO_WIDTH, PHOTO_HEIGHT);
-  }
-  if(hasCloth){
-    home_button.display();
   }
   if(solved == true && !hasCloth){
     fill('red')
@@ -142,6 +113,10 @@ function dragPhotoPuzzle(){
 
         if(dist(photo_x, photo_y, solve_x, solve_y) < 5){
             solved = true;
+            // Play once when the matching letters turn red.
+            document.getElementById("match-sound").play().catch(error => {
+                console.warn("Match sound could not start:", error.message);
+            });
         }
     }
 }
@@ -185,21 +160,15 @@ function clickPhotoPuzzle() {
         clothClicked = true;
         setupParticles();
     }
-    if(hasCloth){
-        home_button.clickNext();
-    }
 }
 
 function pickUpPhoto() {
   hasCloth = true;
+  document.getElementById("cloth-pickup-sound").play().catch(error => {
+    console.warn("Cloth sound could not start:", error.message);
+  });
   if (typeof parent.addItem === "function") parent.addItem(3);
-  let str = localStorage.getItem('collected_items')
-  if(str == null){
-    str = "[]";
-  }
-  let collected_items = JSON.parse(str);
-  collected_items.push(3);
-  localStorage.setItem('collected_items', JSON.stringify(collected_items));
+  if (typeof parent.completePuzzle === "function") parent.completePuzzle("photo");
 }
 
 function mouseOverPhoto() {

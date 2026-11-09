@@ -5,30 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>The Lost Box</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=audio-credits-1" />
   </head>
   <body>
-    <h1> The Lost Box </h1>
-    <h2>Grace and Celia</h2>
+    <header>
+      <h1>The Lost Box</h1>
+      <p>Grace and Celia</p>
+    </header>
     <main>
       <section id="stage">
         <div id="scene"></div>
-        <nav id="hub" aria-label="Choose a puzzle" hidden>
-          <button data-puzzle="shadow-cage">Puzzle 1</button>
-          <button data-puzzle="photo">Puzzle 2</button>
-          <button data-puzzle="glasses">Puzzle 3</button>
-          <button data-puzzle="fracture">Puzzle 4</button>
-          <button data-puzzle="gears">Puzzle 5</button>
-          <button data-puzzle="flower-clock">Puzzle 6</button>
-        </nav>
+        <button id="begin">Begin</button>
+        <nav id="hub" aria-label="Explore the attic" hidden></nav>
+        <div id="ending" hidden>~ FIN ~</div>
         <section id="puzzle-panel" hidden>
-          <button id="back">← Back</button>
-          <iframe id="shadow-cage" title="Puzzle 1 — Shadow Cage" data-src="puzzles/shadow-cage/index.html" hidden></iframe>
-          <iframe id="photo" title="Puzzle 2 — Photo Puzzle" data-src="puzzles/photo/index.html" hidden></iframe>
-          <iframe id="glasses" title="Puzzle 3 — Dirty Glasses" data-src="puzzles/glasses/index.html" hidden></iframe>
-          <iframe id="fracture" title="Puzzle 4 — Fracture" data-src="puzzles/fracture/index.html" hidden></iframe>
-          <iframe id="gears" title="Puzzle 5 — Gears" data-src="puzzles/gears/index.html" hidden></iframe>
-          <iframe id="flower-clock" title="Puzzle 6 — Flower Clock" data-src="puzzles/flower-clock/index.html" hidden></iframe>
+          <div class="puzzle-toolbar">
+            <button
+              id="back"
+              aria-label="Return to home"
+              title="Return to home"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9" />
+              </svg>
+            </button>
+          </div>
+          <button
+            id="return-room"
+            aria-label="Return to home"
+            title="Return to home"
+            hidden
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9" />
+            </svg>
+          </button>
+          <iframe
+            id="shadow-cage"
+            title="Puzzle 1 — Shadow Cage"
+            data-src="puzzles/shadow-cage/index.html"
+            hidden
+          ></iframe>
+          <iframe
+            id="photo"
+            title="Puzzle 2 — Photo Puzzle"
+            data-src="puzzles/photo/index.html?v=cloth-sound-1"
+            hidden
+          ></iframe>
+          <iframe
+            id="glasses"
+            title="Puzzle 3 — Dirty Glasses"
+            data-src="puzzles/glasses/index.html?v=knife-sound-2"
+            hidden
+          ></iframe>
+          <iframe
+            id="fracture"
+            title="Puzzle 4 — Fracture"
+            data-src="puzzles/fracture/index.html?v=fragment-sound-1"
+            hidden
+          ></iframe>
+          <iframe
+            id="gears"
+            title="Puzzle 5 — Gears"
+            data-src="puzzles/gears/index.html?v=gear-motion-sound-2"
+            hidden
+          ></iframe>
+          <iframe
+            id="flower-clock"
+            title="Puzzle 6 — Flower Clock"
+            data-src="puzzles/flower-clock/index.html?v=growth-sound-2"
+            hidden
+          ></iframe>
         </section>
       </section>
       <aside id="inventory">
@@ -39,14 +106,62 @@
         <button class="slot" aria-label="Item slot 4"></button>
       </aside>
     </main>
-    <div>Click, drag, and rotate objects to solve the puzzles</div>
-    <div>Solving each puzzle gives a tool that will be necessary for the next one</div>
-    <div>To take an item out of the inventory, click on its box then click on the canvas</div>
-    <div>Solve all 6 puzzles to complete the game</div>
+    <footer>
+      <div class="instructions">
+        <div>
+          Explore the attic. Click, drag, and rotate objects to solve each
+          puzzle and reveal the next one.
+        </div>
+        <section id="audio-credits" hidden aria-label="Music and sound credits">
+          <strong>Music &amp; Sound Credits</strong>
+          <ul>
+            <li>matsu — <cite>憂いのワルツ</cite>.</li>
+            <li>
+              Isaac Nite — “Lullaby” and “5pm,” from
+              <cite>HOUSE Original Soundtrack</cite>.
+            </li>
+            <li>
+              Kevin Colombin — “Ghost Protocol,” from
+              <cite>Minds Beneath Us (沉默意志) Original Soundtrack</cite>.
+            </li>
+            <li>
+              木夊Musuii — “Dissection” and “Museum,” from
+              <cite>NARRENSCHIFF (愚人船) Original Soundtrack</cite>.
+            </li>
+            <li>
+              Victor Butzelaar — “Underground Blossom Main Theme,” from
+              <cite>Underground Blossom Original Soundtrack</cite>.
+            </li>
+          </ul>
+          <div>
+            Other sound effects sourced from
+            <a
+              href="https://pixabay.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Pixabay</a
+            >.
+          </div>
+        </section>
+        <div>
+          To use an inventory item, select its box, then click inside the
+          puzzle. Complete all six puzzles to finish.
+        </div>
+      </div>
+      <div id="reset-controls">
+        <button id="reset-game" aria-describedby="reset-description">
+          ↻ Reset game
+        </button>
+        <span id="reset-description"
+          >Clear saved progress and start again.</span
+        >
+      </div>
+    </footer>
     <script src="vendor/p5.min.js"></script>
-    <script src="data.js"></script>
-    <script src="menu.js"></script>
+    <script src="data.js?v=gears-music-1"></script>
+    <script src="menu.js?v=ending-flowers-1"></script>
     <script src="key.js"></script>
-    <script src="sketch.js"></script>
+    <script src="sketch.js?v=audio-credits-1"></script>
+    <script src="module.js?v=navigation-sound-2"></script>
   </body>
 </html>

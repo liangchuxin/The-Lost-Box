@@ -1,18 +1,21 @@
-// Keep cutting quickly to break the photo, then move the pieces to uncover the key.
+// Keep cutting quickly to break the photo, then move the pieces to uncover the wrench.
 // Each Piece stores its shape and movement. The original photo supplies its image.
 let pieces = [];
 let cuts = []; // Each cut is shared by the pieces it separates.
 let trails = [];
 let dust = [];
-let photoImage, keyImage;
+let photoImage, wrenchImage;
+let hasKnife = false;
 let broken = false;
-let keyCollected = false;
+let wrenchCollected = false;
 let chainProgress = 0;
 let lastCut = -10;
 let spaceHeld = false;
 let pausedAt = null;
 let hitPause = 0;
 let shake = 0;
+let lastCutNote = -1;
+let fragmentSoundTimer;
 
 const HEAL_TIME = 0.8; // Seconds until the pieces close completely.
 const CHAIN_WINDOW = 0.3; // A longer gap between cuts resets the chain.
@@ -21,13 +24,13 @@ const BOX = {}; // The photo's four edges on the canvas.
 
 function preload() {
   photoImage = loadImage("assets/husband.png");
-  keyImage = loadImage("assets/key.svg");
+  wrenchImage = loadImage("../gears/images/key.png");
 }
 
 function setup() {
   const canvas = createCanvas(740, 620).parent("scene");
   const photoHeight = height - 60;
-  const photoWidth = photoHeight * photoImage.width / photoImage.height;
+  const photoWidth = (photoHeight * photoImage.width) / photoImage.height;
   BOX.left = (width - photoWidth) / 2;
   BOX.right = (width + photoWidth) / 2;
   BOX.top = 30;
@@ -38,10 +41,11 @@ function setup() {
   document.getElementById("reset").onclick = resetPuzzle;
   window.addEventListener("keydown", handleKeyDown);
   window.addEventListener("keyup", handleKeyUp);
-  window.addEventListener("blur", () => { spaceHeld = false; });
+  window.addEventListener("blur", () => {
+    spaceHeld = false;
+  });
   window.addEventListener("message", handlePuzzleMessage);
   resetPuzzle();
-  getInventoryItem();
 }
 
 function resetPuzzle() {
@@ -50,7 +54,7 @@ function resetPuzzle() {
   trails = [];
   dust = [];
   broken = false;
-  keyCollected = false;
+  wrenchCollected = false;
   spaceHeld = false;
   chainProgress = 0;
   lastCut = -10;
@@ -83,8 +87,8 @@ function draw() {
   push();
   translate(random(-shake, shake), random(-shake, shake));
   shake *= exp(-20 * dt);
-  if (broken && !keyCollected) {
-    image(keyImage, width / 2 - 45, height / 2 - 45, 90, 90);
+  if (broken && !wrenchCollected) {
+    image(wrenchImage, width / 2 - 45, height / 2 - 50, 90, 100);
   }
   for (const piece of pieces) {
     piece.update(dt, now);
@@ -92,10 +96,6 @@ function draw() {
   }
   drawCutEffects(dt);
   pop();
-
-  if(keyCollected){
-    home_button.display();
-  }
 }
 
 class Piece {
@@ -149,7 +149,13 @@ class Piece {
     }
     drawingContext.closePath();
     drawingContext.clip();
-    image(photoImage, BOX.left, BOX.top, BOX.right - BOX.left, BOX.bottom - BOX.top);
+    image(
+      photoImage,
+      BOX.left,
+      BOX.top,
+      BOX.right - BOX.left,
+      BOX.bottom - BOX.top,
+    );
     drawingContext.restore();
     pop();
   }
@@ -162,10 +168,16 @@ function healAmount(age) {
 }
 
 function randomCut() {
-  if (broken) return;
+  if (!hasKnife || broken) return;
   const angle = random(TWO_PI);
-  const x = random(lerp(BOX.left, BOX.right, 0.2), lerp(BOX.left, BOX.right, 0.8));
-  const y = random(lerp(BOX.top, BOX.bottom, 0.2), lerp(BOX.top, BOX.bottom, 0.8));
+  const x = random(
+    lerp(BOX.left, BOX.right, 0.2),
+    lerp(BOX.left, BOX.right, 0.8),
+  );
+  const y = random(
+    lerp(BOX.top, BOX.bottom, 0.2),
+    lerp(BOX.top, BOX.bottom, 0.8),
+  );
   const dx = cos(angle) * 700;
   const dy = sin(angle) * 700;
   slash({ x: x - dx, y: y - dy }, { x: x + dx, y: y + dy });
@@ -178,14 +190,22 @@ function slash(a, b) {
   const normalX = -(b.y - a.y) / length;
   const normalY = (b.x - a.x) / length;
   // Move the two sides away from the cut line, rather than along it.
-  const cut = { start: now, dx: normalX * random(6, 9), dy: normalY * random(6, 9) };
+  const cut = {
+    start: now,
+    dx: normalX * random(6, 9),
+    dy: normalY * random(6, 9),
+  };
   const nextPieces = [];
   let splitCount = 0;
   for (const piece of pieces) {
     const left = splitPolygon(piece.points, a, b, 1);
     const right = splitPolygon(piece.points, a, b, -1);
     // Avoid tiny slivers and too many fragments.
-    if (area(left) > 55 && area(right) > 55 && pieces.length + splitCount < 240) {
+    if (
+      area(left) > 55 &&
+      area(right) > 55 &&
+      pieces.length + splitCount < 240
+    ) {
       const leftPiece = new Piece(left, piece);
       const rightPiece = new Piece(right, piece);
       leftPiece.cuts.push({ cut: cut, sign: 1 });
@@ -197,6 +217,7 @@ function slash(a, b) {
     }
   }
   if (splitCount === 0) return;
+  playCutSound();
   pieces = nextPieces;
   cuts.push(cut);
   if (now - lastCut > CHAIN_WINDOW) chainProgress = 0;
@@ -207,19 +228,28 @@ function slash(a, b) {
   trails.push({
     a: { x: a.x - (b.x - a.x) * 2, y: a.y - (b.y - a.y) * 2 },
     b: { x: b.x + (b.x - a.x) * 2, y: b.y + (b.y - a.y) * 2 },
-    life: 0.2
+    life: 0.2,
   });
   for (let i = 0; i < 8; i++) {
     dust.push({
-      x: (a.x + b.x) / 2, y: (a.y + b.y) / 2,
-      vx: random(-180, 180), vy: random(-180, 180), life: random(0.2, 0.5)
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2,
+      vx: random(-180, 180),
+      vy: random(-180, 180),
+      life: random(0.2, 0.5),
     });
   }
   if (chainProgress >= 100) breakPhoto(cut, a, b, now);
 }
 
 function breakPhoto(lastEffect, a, b, now) {
+  if (broken) return;
   broken = true;
+  const sound = document.getElementById("break-sound");
+  sound.currentTime = 0;
+  sound.play().catch(error => {
+    if (error.name !== "AbortError") console.warn("Break sound could not start:", error.message);
+  });
   shake = 4;
   hitPause = 0.035;
   for (const piece of pieces) {
@@ -238,8 +268,8 @@ function breakPhoto(lastEffect, a, b, now) {
       let sign = 1;
       if (side(piece.center, a, b) < 0) sign = -1;
       const length = dist(a.x, a.y, b.x, b.y);
-      driftX = -(b.y - a.y) / length * sign;
-      driftY = (b.x - a.x) / length * sign;
+      driftX = (-(b.y - a.y) / length) * sign;
+      driftY = ((b.x - a.x) / length) * sign;
     }
     const speed = random(3, 5) / dist(0, 0, driftX, driftY);
     piece.driftX = driftX * speed;
@@ -250,12 +280,13 @@ function breakPhoto(lastEffect, a, b, now) {
 function clickPhoto(event) {
   if (event.button !== 0) return;
   event.preventDefault();
+  getInventoryItem();
+  if (!hasKnife) return;
   if (broken) {
-    if(keyCollected) home_button.clickNext();
     // Convert browser coordinates to canvas coordinates when CSS scales the canvas.
     const bounds = event.currentTarget.getBoundingClientRect();
-    const x = (event.clientX - bounds.left) * width / bounds.width;
-    const y = (event.clientY - bounds.top) * height / bounds.height;
+    const x = ((event.clientX - bounds.left) * width) / bounds.width;
+    const y = ((event.clientY - bounds.top) * height) / bounds.height;
     moveFragments(x, y);
   } else {
     randomCut();
@@ -264,9 +295,13 @@ function clickPhoto(event) {
 
 // Handle repeated keydown events too, so holding Space does not scroll the page.
 function handleKeyDown(event) {
-  if (event.code !== "Space" || event.ctrlKey || event.metaKey || event.altKey) return;
-  if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+  if (event.code !== "Space" || event.ctrlKey || event.metaKey || event.altKey)
+    return;
+  if (event.target.closest('input, textarea, select, [contenteditable="true"]'))
+    return;
   event.preventDefault();
+  getInventoryItem();
+  if (!hasKnife) return;
   if (!spaceHeld && !broken) randomCut();
   spaceHeld = true;
 }
@@ -279,7 +314,8 @@ function handleKeyUp(event) {
 }
 
 function moveFragments(x, y) {
-  if (tryCollectKey(x, y)) return;
+  if (tryCollectWrench(x, y)) return;
+  let moved = false;
   for (const piece of pieces) {
     let dx = piece.center.x + piece.x - x;
     let dy = piece.center.y + piece.y - y;
@@ -292,27 +328,39 @@ function moveFragments(x, y) {
     }
     // Divide by distance to get a direction; nearby pieces receive a larger push.
     const force = 65 * max(0.25, 1 - distance / 200);
-    piece.targetX += dx / distance * force;
-    piece.targetY += dy / distance * force;
-    piece.driftX = dx / distance * 4;
-    piece.driftY = dy / distance * 4;
+    moved = true;
+    piece.targetX += (dx / distance) * force;
+    piece.targetY += (dy / distance) * force;
+    piece.driftX = (dx / distance) * 4;
+    piece.driftY = (dy / distance) * 4;
+  }
+  if (moved) {
+    const sound = document.getElementById("fragment-move-sound");
+    clearTimeout(fragmentSoundTimer);
+    sound.currentTime = 0;
+    sound.play().then(() => {
+      clearTimeout(fragmentSoundTimer);
+      fragmentSoundTimer = setTimeout(() => sound.pause(), 500);
+    }).catch(error => {
+      if (error.name !== "AbortError") console.warn("Fragment sound could not start:", error.message);
+    });
   }
 }
 
-function tryCollectKey(x, y) {
-  if (keyCollected) return false;
-  const keyX = x - (width / 2 - 45);
-  const keyY = y - (height / 2 - 45);
-  // Match the ring and diagonal shaft inside the 90 x 90 SVG.
-  const onRing = dist(keyX, keyY, 20, 70) < 22;
-  const onShaft = keyX > 27 && keyX < 86 && keyY > 4 && keyY < 65 && abs(keyX + keyY - 90) < 11;
-  if (!onRing && !onShaft) return false;
+function tryCollectWrench(x, y) {
+  if (wrenchCollected) return false;
+  if (!broken) return false;
+  if (abs(x - width / 2) > 45 || abs(y - height / 2) > 50) return false;
   for (const piece of pieces) {
     if (pieceCovers(piece, x, y)) return false; // Cannot collect through the photo.
   }
-  keyCollected = true;
-  addItemToLocalStorage();
+  wrenchCollected = true;
+  document.getElementById("wrench-pickup-sound").play().catch(error => {
+    console.warn("Wrench sound could not start:", error.message);
+  });
   if (typeof parent.addItem === "function") parent.addItem(1);
+  if (typeof parent.completePuzzle === "function")
+    parent.completePuzzle("fracture");
   return true;
 }
 
@@ -326,7 +374,12 @@ function drawCutEffects(dt) {
     particle.vy += 160 * dt;
     stroke(228, 202, 159, max(0, particle.life) * 330);
     strokeWeight(1.5);
-    line(particle.x, particle.y, particle.x - particle.vx * 0.015, particle.y - particle.vy * 0.015);
+    line(
+      particle.x,
+      particle.y,
+      particle.x - particle.vx * 0.015,
+      particle.y - particle.vy * 0.015,
+    );
     if (particle.life <= 0) dust.splice(i, 1);
   }
   for (let i = trails.length - 1; i >= 0; i--) {
@@ -342,8 +395,10 @@ function drawCutEffects(dt) {
 // Geometry helpers: polygon points stay in their original photo coordinates.
 function photoCorners() {
   return [
-    { x: BOX.left, y: BOX.top }, { x: BOX.right, y: BOX.top },
-    { x: BOX.right, y: BOX.bottom }, { x: BOX.left, y: BOX.bottom }
+    { x: BOX.left, y: BOX.top },
+    { x: BOX.right, y: BOX.top },
+    { x: BOX.right, y: BOX.bottom },
+    { x: BOX.left, y: BOX.bottom },
   ];
 }
 
@@ -360,10 +415,16 @@ function splitPolygon(points, a, b, sign) {
     const currentSide = side(current, a, b) * sign;
     const nextSide = side(next, a, b) * sign;
     if (currentSide >= 0) result.push(current);
-    if ((currentSide > 0 && nextSide < 0) || (currentSide < 0 && nextSide > 0)) {
+    if (
+      (currentSide > 0 && nextSide < 0) ||
+      (currentSide < 0 && nextSide > 0)
+    ) {
       // This edge crosses the cut. Add the intersection to both new shapes.
       const t = currentSide / (currentSide - nextSide);
-      result.push({ x: lerp(current.x, next.x, t), y: lerp(current.y, next.y, t) });
+      result.push({
+        x: lerp(current.x, next.x, t),
+        y: lerp(current.y, next.y, t),
+      });
     }
   }
   return result;
@@ -406,45 +467,30 @@ function handlePuzzleMessage(event) {
   }
 }
 
-home_button = {
-    x: 740/2,
-    y: 620/4,
-    size: 150,
-    mouseover: function(){
-        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
-            return true;
-        }
-        return false;
-    },
-    display: function(){
-        fill('#32965D');
-        if(this.mouseover()) fill('#21633e');
-        ellipse(this.x, this.y, this.size, this.size);
-        fill(255);
-        textSize(45);
-        textAlign(CENTER, CENTER);
-        text("next", this.x, this.y);
-    },
-    clickNext: function(){
-        if(this.mouseover()){
-            if (typeof parent.showHub === "function") parent.showHub();
-        }
-    }
+function getInventoryItem() {
+  // Selecting the knife enables cutting; the knife stays in the inventory.
+  if (
+    !hasKnife &&
+    typeof parent.getSelectedItem === "function" &&
+    parent.getSelectedItem() === 4
+  ) {
+    hasKnife = true;
+  }
 }
 
-function addItemToLocalStorage(){
-  if (typeof parent.addItem === "function") parent.addItem(1);
-    let str = localStorage.getItem('collected_items')
-    if(str == null){
-        str = "[]";
+// Treat the original pitch as C; raise it by 0, 4, 7, or 9 semitones.
+function playCutSound() {
+  const notes = [0, 4, 7, 9].filter(note => note !== lastCutNote);
+  lastCutNote = random(notes);
+  for (const id of ["cut-sound", "cut-pitch-sound"]) {
+    // Separate voices let quick cuts overlap instead of interrupting each other.
+    const sound = document.getElementById(id).cloneNode();
+    if (id === "cut-pitch-sound") {
+      sound.preservesPitch = false;
+      sound.playbackRate = Math.pow(2, lastCutNote / 12);
     }
-    let collected_items = JSON.parse(str);
-    collected_items.push(1);
-    localStorage.setItem('collected_items', JSON.stringify(collected_items));
-}
-
-function getInventoryItem(){
-    //if (parent.getSelectedItem() === 4) {
-        parent.removeInventoryItem(4);
-    //}
+    sound.play().catch(error => {
+      if (error.name !== "AbortError") console.warn("Cut sound could not start:", error.message);
+    });
+  }
 }

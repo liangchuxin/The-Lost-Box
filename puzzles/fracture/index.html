@@ -13,9 +13,14 @@
     button:focus-visible { outline: 2px solid #392a20; }
   </style>
   <script src="../../vendor/p5.min.js" defer></script>
-  <script src="sketch.js" defer></script>
+  <script src="sketch.js?v=fragment-sound-1" defer></script>
 </head>
 <body>
+  <audio id="fragment-move-sound" src="../../sounds/lamp-drag.mp3" preload="auto"></audio>
+  <audio id="wrench-pickup-sound" src="../../sounds/object-pickup.mp3" preload="auto"></audio>
+  <audio id="break-sound" src="../../sounds/photo-break.mp3" preload="auto"></audio>
+  <audio id="cut-sound" src="../../sounds/cut.mp3" preload="auto"></audio>
+  <audio id="cut-pitch-sound" src="../../sounds/cut-pitch.mp3" preload="auto"></audio>
   <main>
     <div id="scene"></div>
     <button id="reset" aria-label="Retry" title="Retry">
@@ -25,6 +30,6 @@
       </svg>
     </button>
   </main>
-  <script src="../../module.js"></script>
+  <script src="../../module.js?v=navigation-sound-2"></script>
 </body>
 </html>
