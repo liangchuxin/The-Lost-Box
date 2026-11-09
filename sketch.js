@@ -1,82 +1,190 @@
 let currentPuzzle = "menu";
 let selectedObjectId = null;
-let ambientSound;
-let treeStage = 0;
-
-const slots = document.querySelectorAll(".slot");
+let homeAudio = [];
+const itemSounds = {};
+const inventoryPickupSound = new Audio("sounds/object-pickup.mp3");
+const puzzleAudio = {};
+let completedPuzzles = [];
+let inventory = [];
+const SAVE_KEY = "lost-box-progress";
+const slots = document.querySelectorAll("#inventory .slot");
 const puzzleFrames = document.querySelectorAll("iframe");
 
 function preload() {
   menuImage = loadImage("images/old_attic.jpeg");
   keyImage = loadImage("images/key.svg");
-  treeImages = loadImage("images/tree_stages.png")
 }
 
 function setup() {
-  const canvas = createCanvas(640, 480);
+  const canvas = createCanvas(960, 720);
   canvas.parent("scene");
   canvas.mousePressed(canvasClicked);
   ellipseMode(CENTER);
   textSize(30);
   textAlign(CENTER);
-
-  ambientSound = new Audio("sounds/windy_ambience.mp3");
-  ambientSound.loop = true;
-  for (const slot of slots) {
-    slot.addEventListener("click", () => selectObject(slot));
+  homeAudio = [new Audio("sounds/windy_ambience.mp3"), new Audio("sounds/attic-music.mp3")];
+  homeAudio[0].volume = 0.12;
+  homeAudio[1].volume = 0.35;
+  for (const sound of homeAudio) sound.loop = true;
+  for (const item of Object.values(items)) {
+    if (!item.sound) continue;
+    const audio = document.createElement("audio");
+    audio.src = new URL(item.sound, document.baseURI).href;
+    audio.preload = "auto";
+    audio.dataset.itemId = item.id;
+    document.body.appendChild(audio);
+    itemSounds[item.id] = audio;
   }
-  for (const button of document.querySelectorAll("[data-puzzle]")) {
-    button.addEventListener("click", () => openPuzzle(button.dataset.puzzle));
+  for (const [id, track] of Object.entries(puzzleMusic)) {
+    const audio = new Audio(track.sound);
+    audio.loop = true;
+    audio.volume = track.volume;
+    puzzleAudio[id] = audio;
   }
-  document.getElementById("back").addEventListener("click", showHub);
+  createRoomObjects();
+  loadProgress();
+  updateAudioCredits();
+  renderInventory();
+  for (const slot of slots) slot.onclick = () => selectObject(slot);
+  document.getElementById("begin").onclick = startGame;
+  document.getElementById("reset-game").onclick = resetGame;
+  document.getElementById("back").onclick = showHub;
+  document.getElementById("return-room").onclick = showHub;
   for (const frame of puzzleFrames) {
     frame.addEventListener("load", () => {
       if (frame.hidden) frame.contentWindow.postMessage("pause-puzzle", location.origin);
       else frame.focus();
     });
   }
-  localStorage.setItem('completed_game', "false");
+  noLoop();
+}
+
+// Save at completed-puzzle checkpoints. Reloading restarts the unfinished
+// puzzle with its entry tools, even if it had already taken a tool out.
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (saved && Array.isArray(saved.completed)) {
+      for (const object of roomObjects) {
+        if (!saved.completed.includes(object.id)) break;
+        completedPuzzles.push(object.id);
+      }
+      inventory = Array.isArray(saved.inventory) ? saved.inventory.filter(id => items[id]) : [];
+    } else {
+      const collected = JSON.parse(localStorage.getItem("collected_items") || "[]");
+      for (const object of roomObjects) {
+        if (!object.reward || !Array.isArray(collected) || !collected.includes(object.reward)) break;
+        completedPuzzles.push(object.id);
+      }
+      if (completedPuzzles.length === 5 && localStorage.getItem("completed_game") === "true") {
+        completedPuzzles.push("flower-clock");
+      }
+    }
+  } catch (error) {
+    completedPuzzles = [];
+    inventory = [];
+  }
+  const count = completedPuzzles.length;
+  if (count > 0 && count < roomObjects.length) {
+    const requiredItem = roomObjects[count - 1].reward;
+    if (!inventory.includes(requiredItem)) inventory.push(requiredItem);
+  }
+  saveProgress();
+}
+
+function saveProgress() {
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ completed: completedPuzzles, inventory }));
+}
+
+function renderInventory() {
+  for (let i = 0; i < slots.length; i++) {
+    const id = inventory[i];
+    const item = items[id];
+    const slot = slots[i];
+    slot.replaceChildren();
+    if (item) {
+      slot.dataset.itemId = id;
+      const image = document.createElement("img");
+      image.src = item.image;
+      image.alt = "";
+      image.draggable = false;
+      const tooltip = document.createElement("span");
+      tooltip.className = "item-tooltip";
+      tooltip.textContent = item.name;
+      slot.append(image, tooltip);
+    } else {
+      delete slot.dataset.itemId;
+    }
+    slot.classList.toggle("selected", id === selectedObjectId);
+    slot.setAttribute("aria-label", item ? item.name : "Item slot " + (i + 1));
+  }
+}
+
+function resetGame() {
+  // Clear only this game's saves and unload each puzzle's in-memory state.
+  for (const frame of puzzleFrames) {
+    if (frame.hasAttribute("src")) frame.contentWindow.postMessage("pause-puzzle", location.origin);
+    frame.hidden = true;
+    frame.removeAttribute("src");
+  }
+  completedPuzzles = [];
+  inventory = [];
+  selectedObjectId = null;
+  localStorage.removeItem(SAVE_KEY);
+  localStorage.removeItem("collected_items");
+  localStorage.removeItem("completed_game");
+  saveProgress();
+  renderInventory();
+  startGame();
 }
 
 function selectObject(slot) {
-  for (const other of slots) other.classList.remove("selected");
-  slot.classList.add("selected");
-  selectedObjectId = null;
-  if (slot.textContent.trim() !== "" && slot.dataset.itemId) {
-    selectedObjectId = Number(slot.dataset.itemId);
+  selectedObjectId = slot.dataset.itemId ? Number(slot.dataset.itemId) : null;
+  if (items[selectedObjectId]) {
+    inventoryPickupSound.currentTime = 0;
+    inventoryPickupSound.play().catch(error => {
+      if (error.name !== "AbortError") console.warn("Inventory sound could not start:", error.message);
+    });
   }
+  renderInventory();
 }
 
 function addItem(id) {
-  const item = items[id];
-  if (!item) return;
-  for (const slot of slots) {
-    if (Number(slot.dataset.itemId) === id) return;
-  }
-  for (const slot of slots) {
-    if (!slot.dataset.itemId) {
-      slot.textContent = item.name;
-      slot.dataset.itemId = id;
-      slot.setAttribute("aria-label", item.name);
-      return;
-    }
-  }
+  if (!items[id] || inventory.includes(id)) return;
+  inventory.push(id);
+  renderInventory();
+  playItemSound(id);
 }
 
 function removeInventoryItem(id) {
-  for(let i = 0; i < slots.length; i++){
-    if (Number(slots[i].dataset.itemId) === id) {
-      slots[i].textContent = "";
-      delete slots[i].dataset.itemId;
-      slots[i].classList.remove("selected");
-      slots[i].setAttribute("aria-label", "Item slot " + (i + 1));
-      if (selectedObjectId === id) selectedObjectId = null;
-    }
-  }
+  if (!inventory.includes(id)) return;
+  inventory = inventory.filter(itemId => itemId !== id);
+  if (selectedObjectId === id) selectedObjectId = null;
+  renderInventory();
+  playItemSound(id);
+}
+
+function playItemSound(id) {
+  const audio = itemSounds[id];
+  if (!audio) return;
+  audio.currentTime = 0;
+  audio.play().catch(error => {
+    if (error.name !== "AbortError") console.warn("Item sound could not start:", error.message);
+  });
 }
 
 function getSelectedItem() {
   return selectedObjectId;
+}
+
+function completePuzzle(id) {
+  const next = roomObjects[completedPuzzles.length];
+  if (!next || next.id !== id || currentPuzzle !== id) return;
+  completedPuzzles.push(id);
+  saveProgress();
+  updateAudioCredits();
+  document.getElementById("back").hidden = true;
+  document.getElementById("return-room").hidden = false;
 }
 
 function showHub() {
@@ -85,30 +193,37 @@ function showHub() {
     frame.hidden = true;
   }
   currentPuzzle = "home";
-
-  let completed = localStorage.getItem('completed_game') == "true";
-
-  let str = localStorage.getItem('collected_items')
-  if(str == null){
-      str = "[]";
-  }
-  const collected = JSON.parse(str);
-  const buttons = document.querySelectorAll("#hub [data-puzzle]");
-  for(let i = 0; i < buttons.length; i++){
-    buttons[i].hidden = completed || i != collected.length;
-  }
-  treeStage = collected.length;
-
+  setPuzzleAudio(completedPuzzles.length === roomObjects.length ? "flower-clock" : null);
+  setHomeAudio(true);
+  document.getElementById("reset-controls").hidden = true;
+  document.getElementById("begin").hidden = true;
   document.getElementById("puzzle-panel").hidden = true;
+  document.getElementById("return-room").hidden = true;
   document.getElementById("hub").hidden = false;
-  loop();
+  const buttons = document.querySelectorAll("#hub [data-puzzle]");
+  for (let i = 0; i < buttons.length; i++) {
+    buttons[i].hidden = i > completedPuzzles.length;
+    buttons[i].disabled = i < completedPuzzles.length;
+    buttons[i].setAttribute("aria-label", roomObjects[i].name + (buttons[i].disabled ? " (completed)" : ""));
+  }
+  updateEndingFlowers();
+  updateAudioCredits();
+  document.getElementById("ending").hidden = completedPuzzles.length !== roomObjects.length;
+  redraw();
 }
 
 function openPuzzle(id) {
+  const next = roomObjects[completedPuzzles.length];
+  if (!next || next.id !== id) return;
   const frame = document.getElementById(id);
   currentPuzzle = id;
+  setHomeAudio(false);
+  setPuzzleAudio(id);
+  document.getElementById("reset-controls").hidden = true;
   document.getElementById("hub").hidden = true;
   document.getElementById("puzzle-panel").hidden = false;
+  document.getElementById("back").hidden = id === "shadow-cage";
+  document.getElementById("return-room").hidden = true;
   frame.hidden = false;
   if (!frame.hasAttribute("src")) frame.src = frame.dataset.src;
   else {
@@ -119,44 +234,14 @@ function openPuzzle(id) {
 }
 
 function draw() {
-  let completed = localStorage.getItem('completed_game');
-  push();
-  if (currentPuzzle === "menu") drawMenu();
-  else if (currentPuzzle === "key") drawKeyPuzzle();
-  else {
-    background("#c9b194");
-    if (currentPuzzle === "home"){
-      if (localStorage.getItem('completed_game') == "true") {
-        text("~ FIN ~", width/2, height/2);
-      } else {
-        drawTree();
-      }
-    }
-  }
-  pop();
-}
-
-
-const treeCrops = [
-  [125, 261, 51, 45],
-  [201, 220, 51, 86],
-  [280, 185, 61, 121],
-  [366, 132, 89, 173],
-  [481, 83, 155, 222],
-  [662, 54, 231, 251]
-];
-
-function drawTree() {
-  let [sx, sy, sw, sh] = treeCrops[treeStage];
-  let groundY = height / 2 + 150;
-  push()
-  fill('#34251f')
-  ellipse(width / 2, groundY - sh/2, sw + 40, sh + 40);
-  pop()
-  image(treeImages, width / 2 - sw / 2, groundY - sh, sw, sh, sx, sy, sw, sh);
+  if (currentPuzzle === "key") drawKeyPuzzle();
+  else drawMenu();
 }
 
 function canvasClicked() {
-  if (currentPuzzle === "menu") clickMenu();
-  else if (currentPuzzle === "key") clickKeyPuzzle();
+  if (currentPuzzle === "key") clickKeyPuzzle();
+}
+
+function updateAudioCredits() {
+  document.getElementById("audio-credits").hidden = completedPuzzles.length !== roomObjects.length;
 }

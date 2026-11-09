@@ -1,29 +1,3 @@
-home_button = {
-    x: 640/2,
-    y: 480/4,
-    size: 100,
-    mouseover: function(){
-        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
-            return true;
-        }
-        return false;
-    },
-    display: function(){
-        fill('#32965D');
-        if(this.mouseover()) fill('#21633e');
-        ellipse(this.x, this.y, this.size, this.size);
-        fill(255);
-        textSize(30);
-        textAlign(CENTER, CENTER);
-        text("next", this.x, this.y);
-    },
-    clickNext: function(){
-        if(this.mouseover()){
-            if (typeof parent.showHub === "function") parent.showHub();
-        }
-    }
-}
-
 mykey = {
     x: 100,
     y: 100,
@@ -44,6 +18,8 @@ solved = false;
 handCollected = false;
 particles = [];
 let showTool = false;
+let wrenchMoved = false;
+let gearStopTimer;
 async function setup(){
     createCanvas(640, 480).parent("scene");
     key_art = await loadImage('images/key.png');
@@ -87,9 +63,6 @@ function draw(){
             image(hand_art, 0,0, 300, 300);
             pop()
         }
-        else{
-            home_button.display();
-        }
     }
 }
 
@@ -98,22 +71,29 @@ function mousePressed(){
     if(!handCollected && solved){
         collectHand();
     }
-    if(handCollected){
-        home_button.clickNext();
-    }
 }
 
 function mouseDragged(){
     if(solved){
         return;
     }
-    if(mykey.mouseover()){
+    if(showTool && mykey.mouseover()){
+        if (mykey.x !== mouseX || mykey.y !== mouseY) wrenchMoved = true;
         mykey.x = mouseX;
         mykey.y = mouseY;
         return;
     }
     for(gear of gears){
         if(dist(mouseX, mouseY, gear.x, gear.y) < gear.size/2){
+            if (mouseX !== pmouseX) {
+                const sound = document.getElementById("gear-click");
+                sound.loop = true;
+                if (sound.paused) sound.play().catch(error => {
+                    if (error.name !== "AbortError") console.warn("Gear sound could not start:", error.message);
+                });
+                clearTimeout(gearStopTimer);
+                gearStopTimer = setTimeout(stopGearSound, 80);
+            }
             if(mouseY < gear.y){
                 gear.angle += mouseX - pmouseX
             }
@@ -125,10 +105,10 @@ function mouseDragged(){
 }
 
 function getInventoryItem(){
-    if (parent.getSelectedItem() === 1) {
+    if (!showTool && typeof parent.getSelectedItem === "function" && parent.getSelectedItem() === 1) {
         parent.removeInventoryItem(1);
-        console.log("here");
         showTool= true;
+        playGearSound("object-place");
     }
 }
 
@@ -137,18 +117,14 @@ function collectHand(){
     let ymarg = 150;
     if(mouseX > mykey.x -xmarg && mouseX < mykey.x + xmarg && mouseY > mykey.y - ymarg  && mouseY < mykey.y + ymarg ){
         handCollected = true;
+        playGearSound("object-pickup");
         if (typeof parent.addItem === "function") parent.addItem(5);
-        let str = localStorage.getItem('collected_items')
-        if(str == null){
-            str = "[]";
-        }
-        let collected_items = JSON.parse(str);
-        collected_items.push(5);
-        localStorage.setItem('collected_items', JSON.stringify(collected_items));
+        if (typeof parent.completePuzzle === "function") parent.completePuzzle("gears");
     }
 }
 
 function checkSolved(){
+    if (!showTool) return;
     let angle_2 = constrain(gear_2.angle%360, 0, 360)
     let angle_3 = constrain(gear_3.angle%360, 0, 360)
     let angle_4 = constrain(gear_4.angle%360, 0, 360)
@@ -165,6 +141,8 @@ function checkSolved(){
     let wasSolved = solved;
     solved = true;
     if(!wasSolved){
+        stopGearSound();
+        playGearSound("ghost-match");
         for(let i = 0; i < 200; i++){
             //leg1: x= random(mykey.x - 50, mykey + 50) y = random(mykey.y - 40, mykey.y - 50)
             let x = random(-50, 50)
@@ -223,3 +201,28 @@ class Gear{
         //this.angle += 1;
     }
 }
+function mouseReleased() {
+    stopGearSound();
+    if (wrenchMoved) playGearSound("object-place");
+    wrenchMoved = false;
+}
+
+function playGearSound(id) {
+    const sound = document.getElementById(id);
+    sound.currentTime = 0;
+    sound.play().catch(error => {
+        if (error.name !== "AbortError") console.warn("Gear puzzle sound could not start:", error.message);
+    });
+}
+
+function stopGearSound() {
+    clearTimeout(gearStopTimer);
+    const sound = document.getElementById("gear-click");
+    sound.pause();
+    sound.currentTime = 0;
+}
+
+window.addEventListener("blur", stopGearSound);
+window.addEventListener("message", event => {
+    if (event.source === parent && event.origin === location.origin && event.data === "pause-puzzle") stopGearSound();
+});

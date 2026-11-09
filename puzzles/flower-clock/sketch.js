@@ -1,9 +1,16 @@
 let flowerImages = [], handImage;
 let flowers = [];
 let handAngle = 210;
+let handInstalled = false;
 let dragging = false, lastMouseAngle = 0;
-let patterns = [[1, 2, 3], [2, 1, 3], [3, 2, 1]];
+let patterns = [
+  [1, 2, 3],
+  [2, 1, 3],
+  // [3, 2, 1]
+];
 let patternIndex = 0, matched = 0;
+let completionReported = false;
+let lastPlantSoundFrame = -1;
 let flowerFrames = [
   [306, 395, 412, 232, 512, 625],
   [371, 258, 280, 507, 514, 762],
@@ -23,12 +30,12 @@ function setup() {
   createCanvas(960, 960).parent('clock-canvas');
   angleMode(DEGREES);
   startRound();
-  getInventoryItem();
 }
 
 function startRound() {
   flowers = new Array(12).fill(null);
   flowers[7] = new Flower(7);
+  if (handInstalled) playPlantSound();
   handAngle = 210;
   matched = 0;
   dragging = false;
@@ -36,12 +43,12 @@ function startRound() {
 }
 
 function draw() {
-  // if (matched === 3 && patternIndex < 2) {
-  //   patternIndex++;
-  //   startRound();
-  // }
+  if (matched === 3 && patternIndex < patterns.length - 1) {
+    patternIndex++;
+    startRound();
+  }
   if (!focused) dragging = false;
-  if (focused && !dragging) {
+  if (handInstalled && focused && !dragging) {
     let speed = min(deltaTime, 50) * 0.05;
     if (keyIsDown(RIGHT_ARROW)) turnHand(speed);
     if (keyIsDown(LEFT_ARROW)) turnHand(-speed);
@@ -52,12 +59,10 @@ function draw() {
   for (let flower of flowers) {
     if (flower) flower.display();
   }
-  rotate(handAngle - 180);
-  imageMode(CENTER);
-  image(handImage, 0, 0, 900, 900);
-  if (matched === 3){ //&& patternIndex === 2) {
-    resetMatrix();
-    home_button.display();
+  if (handInstalled) {
+    rotate(handAngle - 180);
+    imageMode(CENTER);
+    image(handImage, 0, 0, 900, 900);
   }
 }
 
@@ -81,6 +86,7 @@ class Flower {
     if (nextStage !== this.stage) {
       this.stage = nextStage;
       this.bounceStart = millis();
+      playPlantSound();
     }
   }
 
@@ -109,14 +115,17 @@ class Flower {
 }
 
 function turnHand(amount) {
-  if (matched === 3 || amount === 0) return;
+  if (!handInstalled || matched === 3 || amount === 0) return;
   let target = round(handAngle + amount, 6);
   let direction = amount > 0 ? 1 : -1;
   let tick = direction > 0 ? floor(handAngle / 30) + 1 : ceil(handAngle / 30) - 1;
   while (direction * (target - tick * 30) >= 0) {
     advanceHand(tick * 30);
     let slot = ((tick % 12) + 12) % 12;
-    if (!flowers[slot] || flowers[slot].cut) flowers[slot] = new Flower(slot);
+    if (!flowers[slot] || flowers[slot].cut) {
+      flowers[slot] = new Flower(slot);
+      playPlantSound();
+    }
     harvest((slot + 6) % 12);
     if (matched === 3) return;
     tick += direction;
@@ -139,6 +148,10 @@ function harvest(slot) {
   if (flower.stage === patterns[patternIndex][matched]) matched++;
   else matched = 0;
   showPattern();
+  if (matched === 3 && patternIndex === patterns.length - 1 && !completionReported) {
+    completionReported = true;
+    if (typeof parent.completePuzzle === "function") parent.completePuzzle("flower-clock");
+  }
 }
 
 function showPattern(newSequence = false) {
@@ -177,10 +190,12 @@ function drawDial() {
 }
 
 function mousePressed() {
-  if (matched === 3){// && patternIndex === 2) {
-    home_button.clickNext();
+  if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) return;
+  if (!handInstalled) {
+    if (dist(mouseX, mouseY, width / 2, height / 2) < 456) installHand();
     return;
   }
+  if (matched === 3) return;
   let x = mouseX - width / 2;
   let y = mouseY - height / 2;
   let along = x * sin(handAngle) - y * cos(handAngle);
@@ -212,39 +227,22 @@ function keyPressed() {
   if (keyCode === LEFT_ARROW || keyCode === RIGHT_ARROW) return false;
 }
 
-function getInventoryItem(){
-    //if (parent.getSelectedItem() === 4) {
-        parent.removeInventoryItem(5);
-    //}
+function installHand() {
+  if (handInstalled || typeof parent.getSelectedItem !== 'function') return;
+  if (parent.getSelectedItem() !== 5) return;
+  handInstalled = true;
+  parent.removeInventoryItem(5);
+  document.getElementById("place-sound").play().catch(error => {
+    console.warn("Place sound could not start:", error.message);
+  });
 }
 
-home_button = {
-    x: 960/2,
-    y: 960/2,
-    size: 200,
-    mouseover: function(){
-        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
-            return true;
-        }
-        return false;
-    },
-    display: function(){
-        fill('#32965D');
-        if(this.mouseover()) fill('#21633e');
-        ellipse(this.x, this.y, this.size, this.size);
-        fill(255);
-        textSize(60);
-        textAlign(CENTER, CENTER);
-        text("next", this.x, this.y);
-    },
-    clickNext: function(){
-        if(this.mouseover()){
-          completeGame();
-          if (typeof parent.showHub === "function") parent.showHub();
-        }
-    }
-}
-
-function completeGame(){;
-  localStorage.setItem('completed_game', "true");
+function playPlantSound() {
+  // Several flowers may grow together; play only once in the same frame.
+  if (lastPlantSoundFrame === frameCount) return;
+  lastPlantSoundFrame = frameCount;
+  const sound = document.getElementById("plant-sound").cloneNode();
+  sound.play().catch(error => {
+    if (error.name !== "AbortError") console.warn("Plant sound could not start:", error.message);
+  });
 }

@@ -1,29 +1,3 @@
-home_button = {
-    x: 640/2,
-    y: 480/4,
-    size: 100,
-    mouseover: function(){
-        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
-            return true;
-        }
-        return false;
-    },
-    display: function(){
-        fill('#32965D');
-        if(this.mouseover()) fill('#21633e');
-        ellipse(this.x, this.y, this.size, this.size);
-        fill(255);
-        textSize(30);
-        textAlign(CENTER, CENTER);
-        text("next", this.x, this.y);
-    },
-    clickNext: function(){
-        if(this.mouseover()){
-            if (typeof parent.showHub === "function") parent.showHub();
-        }
-    }
-}
-
 let drops_left = [];
 let drops_right = [];
 let currpsswd = [0, 0, 0, 0]
@@ -55,7 +29,12 @@ async function setup() {
 }
 
 function draw(){
-    if(psswd.join('') == currpsswd.join('')) solved = true;
+    if(!solved && psswd.join('') == currpsswd.join('')) {
+        solved = true;
+        document.getElementById("match-sound").play().catch(error => {
+            console.warn("Match sound could not start:", error.message);
+        });
+    }
     background('#d9cec0');
     strokeWeight(5);
     rightLens.display();
@@ -68,9 +47,6 @@ function draw(){
     if(solved){
         if(!knifeCollected){
             image(knife_art, 40, height/2 - 20, 245)
-        }
-        else{
-            home_button.display();
         }
         if(frameCount % 10 == 0){
             if(drops_left.length < 100){
@@ -101,9 +77,6 @@ function mousePressed(){
     if(!knifeCollected && solved){
         collectKnife();
     }
-    if(knifeCollected && solved){
-        home_button.clickNext();
-    }
 }
 
 function getInventoryItem(){
@@ -117,14 +90,11 @@ function getInventoryItem(){
 function collectKnife(){
     if(mouseX > 40 && mouseX < 40+245 && mouseY > height/2 - 20 && mouseY < height/2 - 20 + 42){
         knifeCollected = true;
+        document.getElementById("knife-pickup-sound").play().catch(error => {
+            console.warn("Knife sound could not start:", error.message);
+        });
         if (typeof parent.addItem === "function") parent.addItem(4);
-        let str = localStorage.getItem('collected_items')
-        if(str == null){
-            str = "[]";
-        }
-        let collected_items = JSON.parse(str);
-        collected_items.push(4);
-        localStorage.setItem('collected_items', JSON.stringify(collected_items));
+        if (typeof parent.completePuzzle === "function") parent.completePuzzle("glasses");
     }
 }
 
@@ -175,6 +145,7 @@ function displayPassword(){
 }
 
 function clickPassword(){
+    const previousPassword = currpsswd.join('');
     let margin = 20;
     //pos 0 up
     if(dist(mouseX, mouseY, width/2 - margin - 40, 3*height/4 + 2*margin/3) < 15){
@@ -216,6 +187,14 @@ function clickPassword(){
     if(dist(mouseX, mouseY, width/2 + margin + 40, 3*height/4 + margin + 40 + margin/3) < 15){
         currpsswd[3]--;
         if(currpsswd[3] == -1) currpsswd[3] = 9;
+    }
+    if (currpsswd.join('') !== previousPassword) {
+        const sound = document.getElementById("adjust-sound");
+        sound.volume = 0.1;
+        sound.currentTime = 0;
+        sound.play().catch(error => {
+            if (error.name !== "AbortError") console.warn("Adjustment sound could not start:", error.message);
+        });
     }
 }
 

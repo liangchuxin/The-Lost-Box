@@ -94,3 +94,6 @@ button {
     padding: 8px;
   }
 }
+
+[hidden] { display: none !important; }
+#collect-photo { z-index: 3; border-radius: 0; }

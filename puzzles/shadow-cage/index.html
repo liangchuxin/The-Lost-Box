@@ -4,11 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>The Lost Box — Shadow room</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=photo-pickup-1" />
     <script src="../../vendor/p5.min.js" defer></script>
-    <script src="sketch.js" defer></script>
+    <script src="sketch.js?v=lamp-drag-1" defer></script>
   </head>
   <body>
+    <audio id="lamp-drag-sound" src="../../sounds/lamp-drag.mp3" preload="auto" loop></audio>
+    <audio id="object-pickup-sound" src="../../sounds/object-pickup.mp3" preload="auto"></audio>
+    <audio id="object-place-sound" src="../../sounds/object-place.mp3" preload="auto"></audio>
     <main>
       <div id="scene">
         <button
@@ -50,6 +53,7 @@
           data-item="pen"
           aria-label="Select fountain pen"
         ></button>
+        <button id="collect-photo" class="object-hit" aria-label="Collect photo" hidden></button>
       </div>
       <div class="lamp-controls">
         <button data-move="-1" aria-label="Move lantern left">←</button
@@ -57,6 +61,6 @@
         ><button id="reset" aria-label="Retry" title="Retry">↻</button>
       </div>
     </main>
-    <script src="../../module.js"></script>
+    <script src="../../module.js?v=navigation-sound-2"></script>
   </body>
 </html>

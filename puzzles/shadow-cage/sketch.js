@@ -1,29 +1,3 @@
-home_button = {
-    x: 960/2,
-    y: 760/4,
-    size: 200,
-    mouseover: function(){
-        if(dist(mouseX, mouseY, this.x, this.y) < this.size/2){
-            return true;
-        }
-        return false;
-    },
-    display: function(){
-        fill('#32965D');
-        if(this.mouseover()) fill('#21633e');
-        ellipse(this.x, this.y, this.size, this.size);
-        fill(255);
-        textSize(60);
-        textAlign(CENTER, CENTER);
-        text("next", this.x, this.y);
-    },
-    clickNext: function(){
-        if(this.mouseover()){
-            if (typeof parent.showHub === "function") parent.showHub();
-        }
-    }
-}
-
 // Real objects and their symbolic shadows use separate image assets.
 // Their positions follow a point-light projection; opening the cage is story animation.
 let art = {};
@@ -32,7 +6,9 @@ let placed = [null, null, null];
 let lampX = 420;
 let moving = 0;
 let draggingLamp = false;
+let lastLampMove = -Infinity;
 let solved = false;
+let photoCollected = false;
 let flightTime = 0;
 
 const LIGHT_DEPTH = 600;
@@ -105,12 +81,14 @@ function preload() {
   art.cageOpen = loadImage("assets/cage-open.png");
   art.keyShadow = loadImage("assets/key-shadow.png");
   art.butterfly = loadImage("assets/butterfly-simple.svg");
+  art.photo = loadImage("../photo/images/photo.png");
 }
 
 function setup() {
   createCanvas(960, 760).parent("scene");
   textFont("Georgia");
   document.getElementById("reset").onclick = resetPuzzle;
+  document.getElementById("collect-photo").onclick = collectPhoto;
   for (const button of document.querySelectorAll("[data-item]")) {
     button.onclick = () => {
       if (solved) return;
@@ -121,6 +99,7 @@ function setup() {
         return;
       }
       selected = selected === id ? null : id;
+      if (selected) playObjectSound("pickup");
       updateControls();
     };
   }
@@ -140,12 +119,14 @@ function setup() {
   window.addEventListener("blur", () => {
     moving = 0;
     draggingLamp = false;
+    setLampSound(false);
   });
   window.addEventListener("message", (event) => {
     if (event.source !== parent || event.origin !== location.origin) return;
     if (event.data === "pause-puzzle") {
       moving = 0;
       draggingLamp = false;
+      setLampSound(false);
     }
   });
   updateControls();
@@ -155,12 +136,14 @@ function placeItem(index) {
   if (solved) return;
   if (!selected) {
     selected = placed[index];
+    if (selected) playObjectSound("pickup");
     updateControls();
     return;
   }
   const oldIndex = placed.indexOf(selected);
   if (oldIndex >= 0) placed[oldIndex] = null;
   placed[index] = selected; // The displaced item returns to its spare spot on the table.
+  playObjectSound("place");
   selected = null;
   updateControls();
 }
@@ -186,15 +169,28 @@ function updateControls() {
   document
     .querySelectorAll("[data-move]")
     .forEach((button) => (button.disabled = solved));
+  const photoButton = document.getElementById("collect-photo");
+  photoButton.hidden = !solved || photoCollected;
+  document.getElementById("reset").disabled = photoCollected;
+  if (solved && !photoCollected) {
+    const bounds = photoBounds(cageBounds(project("cage")));
+    photoButton.style.left = `${(bounds.x / 960) * 100}%`;
+    photoButton.style.top = `${(bounds.y / 760) * 100}%`;
+    photoButton.style.width = `${(bounds.w / 960) * 100}%`;
+    photoButton.style.height = `${(bounds.h / 760) * 100}%`;
+  }
 }
 
 function resetPuzzle() {
+  setLampSound(false);
+  lastLampMove = -Infinity;
   placed = [null, null, null];
   selected = null;
   lampX = 420;
   moving = 0;
   draggingLamp = false;
   solved = false;
+  photoCollected = false;
   flightTime = 0;
   updateControls();
 }
@@ -243,6 +239,7 @@ function isAligned(cage, key, bow) {
 
 function draw() {
   const dt = min(deltaTime, 50) / 1000;
+  const previousLampX = lampX;
   if (!solved) {
     if (draggingLamp) lampX = constrain(mouseX, 360, 720);
     else lampX = constrain(lampX + moving * 100 * dt, 360, 720);
@@ -257,16 +254,17 @@ function draw() {
     draggingLamp = false;
     selected = null;
     updateControls();
-    addItemToLocalStorage();
-  } else if (solved){
+  } else if (solved) {
     flightTime += dt;
   }
+  if (lampX !== previousLampX) lastLampMove = millis();
+  // Bridge short gaps between mouse updates without restarting the sound each frame.
+  setLampSound(!solved && (draggingLamp || moving !== 0) && millis() - lastLampMove < 100);
   drawRoom();
   drawShadows(cage, key, bow);
   drawSlots();
   drawObjects();
   drawLantern();
-  if(solved) home_button.display();
 }
 
 function drawRoom() {
@@ -360,7 +358,11 @@ function drawShadows(cage, key, bow) {
   ctx.rect(46, 42, 868, 407);
   ctx.clip();
   if (bow && !solved) drawButterfly(bow);
-  if (cage) drawCageShadow(cageBounds(cage));
+  if (cage) {
+    const box = cageBounds(cage);
+    drawCageShadow(box);
+    if (solved && !photoCollected) drawPhoto(box);
+  }
   if (key) {
     const w = 100 * key.scale,
       h = (w * 512) / 2064;
@@ -393,6 +395,26 @@ function drawCageShadow(box) {
   sprite(id, box.x, box.y, (box.w * crops[id][2]) / crops.cageShadow[2], box.h);
 }
 
+// The photo lies flat on the floor of the open cage.
+function photoBounds(box) {
+  return {
+    x: box.x + box.w * 0.27,
+    y: box.y + box.h * 0.82,
+    w: box.w * 0.46,
+    h: box.h * 0.14,
+  };
+}
+
+function drawPhoto(box) {
+  const b = photoBounds(box);
+  push();
+  translate(b.x + b.w / 2, b.y + b.h / 2);
+  rotate(-0.08);
+  imageMode(CENTER);
+  image(art.photo, 0, 0, b.w, b.h);
+  pop();
+}
+
 function mousePressed(event) {
   if (event.target.tagName !== "CANVAS") return;
   if (
@@ -403,20 +425,37 @@ function mousePressed(event) {
     mouseY < 725
   )
     draggingLamp = true;
-
-  if(solved) home_button.clickNext();
 }
 function mouseReleased() {
   draggingLamp = false;
+  if (moving === 0) setLampSound(false);
 }
 
-function addItemToLocalStorage(){
+function collectPhoto() {
+  if (!solved || photoCollected) return;
+  photoCollected = true;
+  updateControls();
   if (typeof parent.addItem === "function") parent.addItem(2);
-    let str = localStorage.getItem('collected_items')
-    if(str == null){
-        str = "[]";
-    }
-    let collected_items = JSON.parse(str);
-    collected_items.push(2);
-    localStorage.setItem('collected_items', JSON.stringify(collected_items));
+  if (typeof parent.completePuzzle === "function")
+    parent.completePuzzle("shadow-cage");
+}
+
+function playObjectSound(action) {
+  const audio = document.getElementById("object-" + action + "-sound");
+  audio.currentTime = 0;
+  audio.play().catch(error => {
+    if (error.name !== "AbortError") console.warn("Object sound could not start:", error.message);
+  });
+}
+
+function setLampSound(playing) {
+  const audio = document.getElementById("lamp-drag-sound");
+  if (playing && audio.paused) {
+    audio.play().catch(error => {
+      if (error.name !== "AbortError") console.warn("Lamp sound could not start:", error.message);
+    });
+  } else if (!playing && !audio.paused) {
+    audio.pause();
+    audio.currentTime = 0;
+  }
 }
