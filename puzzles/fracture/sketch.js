@@ -49,6 +49,7 @@ function setup() {
 }
 
 function resetPuzzle() {
+  if (wrenchCollected) return;
   pieces = [new Piece(photoCorners())];
   cuts = [];
   trails = [];
@@ -183,6 +184,7 @@ function randomCut() {
   slash({ x: x - dx, y: y - dy }, { x: x + dx, y: y + dy });
 }
 
+// image cut implementation with help of codex 11.6
 function slash(a, b) {
   const now = millis() / 1000;
   if (now - lastCut < 0.065) return;
@@ -247,8 +249,9 @@ function breakPhoto(lastEffect, a, b, now) {
   broken = true;
   const sound = document.getElementById("break-sound");
   sound.currentTime = 0;
-  sound.play().catch(error => {
-    if (error.name !== "AbortError") console.warn("Break sound could not start:", error.message);
+  sound.play().catch((error) => {
+    if (error.name !== "AbortError")
+      console.warn("Break sound could not start:", error.message);
   });
   shake = 4;
   hitPause = 0.035;
@@ -338,12 +341,16 @@ function moveFragments(x, y) {
     const sound = document.getElementById("fragment-move-sound");
     clearTimeout(fragmentSoundTimer);
     sound.currentTime = 0;
-    sound.play().then(() => {
-      clearTimeout(fragmentSoundTimer);
-      fragmentSoundTimer = setTimeout(() => sound.pause(), 500);
-    }).catch(error => {
-      if (error.name !== "AbortError") console.warn("Fragment sound could not start:", error.message);
-    });
+    sound
+      .play()
+      .then(() => {
+        clearTimeout(fragmentSoundTimer);
+        fragmentSoundTimer = setTimeout(() => sound.pause(), 500);
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError")
+          console.warn("Fragment sound could not start:", error.message);
+      });
   }
 }
 
@@ -355,9 +362,13 @@ function tryCollectWrench(x, y) {
     if (pieceCovers(piece, x, y)) return false; // Cannot collect through the photo.
   }
   wrenchCollected = true;
-  document.getElementById("wrench-pickup-sound").play().catch(error => {
-    console.warn("Wrench sound could not start:", error.message);
-  });
+  document.getElementById("reset").hidden = true;
+  document
+    .getElementById("wrench-pickup-sound")
+    .play()
+    .catch((error) => {
+      console.warn("Wrench sound could not start:", error.message);
+    });
   if (typeof parent.addItem === "function") parent.addItem(1);
   if (typeof parent.completePuzzle === "function")
     parent.completePuzzle("fracture");
@@ -480,7 +491,7 @@ function getInventoryItem() {
 
 // Treat the original pitch as C; raise it by 0, 4, 7, or 9 semitones.
 function playCutSound() {
-  const notes = [0, 4, 7, 9].filter(note => note !== lastCutNote);
+  const notes = [0, 4, 7, 9].filter((note) => note !== lastCutNote);
   lastCutNote = random(notes);
   for (const id of ["cut-sound", "cut-pitch-sound"]) {
     // Separate voices let quick cuts overlap instead of interrupting each other.
@@ -489,8 +500,9 @@ function playCutSound() {
       sound.preservesPitch = false;
       sound.playbackRate = Math.pow(2, lastCutNote / 12);
     }
-    sound.play().catch(error => {
-      if (error.name !== "AbortError") console.warn("Cut sound could not start:", error.message);
+    sound.play().catch((error) => {
+      if (error.name !== "AbortError")
+        console.warn("Cut sound could not start:", error.message);
     });
   }
 }

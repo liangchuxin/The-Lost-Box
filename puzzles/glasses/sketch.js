@@ -82,7 +82,6 @@ function mousePressed(){
 function getInventoryItem(){
     if (parent.getSelectedItem() === 3) {
         parent.removeInventoryItem(3);
-        console.log("here");
         showTool= true;
     }
 }

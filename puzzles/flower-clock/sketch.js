@@ -30,6 +30,14 @@ function setup() {
   createCanvas(960, 960).parent('clock-canvas');
   angleMode(DEGREES);
   startRound();
+  document.getElementById("reset").onclick = resetRound;
+}
+
+// Retry only the current sequence; keep completed sequences and the installed hand.
+function resetRound() {
+  if (completionReported) return;
+  if (matched === 3 && patternIndex < patterns.length - 1) patternIndex++;
+  startRound();
 }
 
 function startRound() {
@@ -150,6 +158,7 @@ function harvest(slot) {
   showPattern();
   if (matched === 3 && patternIndex === patterns.length - 1 && !completionReported) {
     completionReported = true;
+    document.getElementById("reset").hidden = true;
     if (typeof parent.completePuzzle === "function") parent.completePuzzle("flower-clock");
   }
 }
@@ -231,6 +240,7 @@ function installHand() {
   if (handInstalled || typeof parent.getSelectedItem !== 'function') return;
   if (parent.getSelectedItem() !== 5) return;
   handInstalled = true;
+  document.getElementById("reset").hidden = false;
   parent.removeInventoryItem(5);
   document.getElementById("place-sound").play().catch(error => {
     console.warn("Place sound could not start:", error.message);

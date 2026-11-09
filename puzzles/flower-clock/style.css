@@ -21,3 +21,7 @@ canvas:active { cursor: grabbing; }
   #pattern { flex-direction: row; gap: 12px; }
   #pattern img { width: 76px; height: 76px; }
 }
+
+#reset { display: block; margin: 16px auto 0; width: 44px; height: 44px; padding: 10px; border: 0; background: transparent; color: #392a20; cursor: pointer; }
+#reset[hidden] { display: none; }
+#reset:focus-visible { outline: 2px solid #392a20; }
